@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "СОБРАНО: запустить Python-сервер",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "args": ["--port", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
