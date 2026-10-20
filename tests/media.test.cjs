@@ -5,13 +5,18 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 function load(extraPhotos) {
-  const context = vm.createContext({ window: {}, URL });
-  for (const name of ["data", "product-images"]) {
-    vm.runInContext(
-      fs.readFileSync(path.join(__dirname, "../js/" + name + ".js"), "utf8"),
-      context,
-    );
-  }
+  const context = vm.createContext({
+    window: {
+      SOBRANO_DATA: JSON.parse(
+        fs.readFileSync(path.join(__dirname, "../data/catalog.json"), "utf8"),
+      ),
+    },
+    URL,
+  });
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../js/product-images.js"), "utf8"),
+    context,
+  );
   if (extraPhotos) context.window.SOBRANO_PRODUCT_IMAGES = extraPhotos;
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, "../js/media.js"), "utf8"),

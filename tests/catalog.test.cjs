@@ -1,16 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const vm = require("node:vm");
 const fs = require("node:fs");
 const path = require("node:path");
-const context = vm.createContext({ window: {} });
-vm.runInContext(
-  fs.readFileSync(path.join(__dirname, "../js/data.js"), "utf8"),
-  context,
+const data = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../data/catalog.json"), "utf8"),
 );
-const { products } = require("../js/core.js").create(
-  context.window.SOBRANO_DATA,
-);
+const { products } = require("../js/core.js").create(data);
 const catalog = require("../js/catalog-ui.js");
 test("RAM фильтруется по реальным DDR, объёму, комплекту и скорости", () => {
   const rows = catalog.filter(

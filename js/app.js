@@ -1,13 +1,16 @@
 /* СОБРАНО: страницы, выбор пользователя и обработчики интерфейса.
-   Характеристики и расчёты — core.js; фильтры — catalog-ui.js;
-   фотографии — media.js; снимки магазинных цен — offers.js/pricing.js. */
-(function () {
+   В локальном режиме каталог и расчёты приходят из Python API.
+   На GitHub Pages используются клиентские модули статического режима. */
+window.SOBRANO_APP_READY = (async function () {
   "use strict";
   const Core = window.SobranoCore;
   const Catalog = window.SobranoCatalog;
   const Media = window.SobranoMedia;
-  const Prices = window.SobranoPricing;
-  const Compatibility = window.SobranoCompatibility;
+  const Backend = window.SobranoBackend;
+  const Prices = Backend.enabled ? Backend.pricing : window.SobranoPricing;
+  const Compatibility = Backend.enabled
+    ? Backend.compatibility
+    : window.SobranoCompatibility;
   const P = Core.products,
     B = Core.builds,
     cats = Core.cats,
@@ -53,9 +56,20 @@
     visible = 12,
     storageOK = true,
     incomingError = false,
+    incomingApply = false,
+    catalogueRequest = 0,
+    buildsRequest = 0,
+    compositionVersion = 0,
+    pendingChanges = 0,
     timer,
     searchTimer;
   let S = { fav: [], cmp: [], parts: {} };
+  let startupStorageText = null,
+    startupStorageChanged = false;
+  const trackStartupStorage = (event) => {
+    if (event.key === KEY || event.key === null) startupStorageChanged = true;
+  };
+  window.addEventListener("storage", trackStartupStorage);
   function sanitize(value) {
     const valid = (list) =>
       Array.isArray(list) ? [...new Set(list.filter(Core.valid))] : [];
@@ -68,7 +82,8 @@
     };
   }
   try {
-    S = sanitize(JSON.parse(localStorage.getItem(KEY) || "{}"));
+    startupStorageText = localStorage.getItem(KEY);
+    S = sanitize(JSON.parse(startupStorageText || "{}"));
   } catch {
     storageOK = false;
   }
@@ -97,8 +112,91 @@
       );
     if (validLink) {
       S.parts = Core.parseParts(payload);
-      persist();
+      incomingApply = true;
     } else incomingError = true;
+  }
+  try {
+    // Пока первый HTTP-запрос выполняется, другая вкладка может изменить состав.
+    // Перед показом интерфейса подготавливаем именно последнюю сохранённую версию.
+    while (true) {
+      await Backend.prepare(S.parts);
+      if (!storageOK) break;
+      let latest;
+      try {
+        latest = localStorage.getItem(KEY);
+      } catch {
+        storageOK = false;
+        break;
+      }
+      if (!startupStorageChanged && latest === startupStorageText) break;
+      startupStorageChanged = false;
+      startupStorageText = latest;
+      let next;
+      try {
+        next = sanitize(JSON.parse(latest || "{}"));
+      } catch {
+        storageOK = false;
+        break;
+      }
+      if (!incomingApply && JSON.stringify(next) === JSON.stringify(S)) break;
+      S = next;
+      incomingApply = false;
+    }
+  } finally {
+    window.removeEventListener("storage", trackStartupStorage);
+  }
+  if (incomingApply) persist();
+  syncBuilderURL();
+
+  let lockedControls = [],
+    previousFocus;
+  function lockComposition(active) {
+    pendingChanges += active ? 1 : -1;
+    if (active && pendingChanges === 1) {
+      previousFocus = document.activeElement;
+      lockedControls = [...app.querySelectorAll("button, input, select")].map(
+        (node) => [node, node.disabled],
+      );
+      lockedControls.forEach(([node]) => {
+        node.disabled = true;
+      });
+      app.setAttribute("aria-busy", "true");
+    } else if (!active && pendingChanges === 0) {
+      lockedControls.forEach(([node, disabled]) => {
+        if (node.isConnected) node.disabled = disabled;
+      });
+      document
+        .querySelectorAll('[data-action="remove-part"]')
+        .forEach((node) => {
+          node.disabled = S.parts[node.dataset.category] === undefined;
+        });
+      app.removeAttribute("aria-busy");
+      if (previousFocus?.isConnected)
+        previousFocus.focus({ preventScroll: true });
+    }
+  }
+  async function changeComposition(parts, incomingState = null) {
+    if (pendingChanges && !incomingState) return false;
+    const version = ++compositionVersion;
+    if (Backend.enabled) lockComposition(true);
+    try {
+      const result = await Backend.prepare(parts);
+      if (version !== compositionVersion) return false;
+      if (incomingState) S = incomingState;
+      S.parts = result.parts;
+      if (!incomingState) persist();
+      syncBuilderURL();
+      return true;
+    } catch (error) {
+      if (version === compositionVersion)
+        toast(error.message + " Состав оставлен без изменений.");
+      return false;
+    } finally {
+      if (Backend.enabled) lockComposition(false);
+    }
+  }
+  function check(parts) {
+    return Backend.enabled ? Backend.check(parts) : Core.check(parts);
   }
   function counters() {
     document.querySelectorAll("[data-count]").forEach((node) => {
@@ -284,19 +382,50 @@
     $("#sort").value = ["asc", "desc"].includes(params.get("sort"))
       ? params.get("sort")
       : "name";
-    drawProducts();
+    return drawProducts();
   }
-  function drawProducts() {
-    if (!$("#results")) return;
+  async function drawProducts() {
+    const target = $("#results");
+    if (!target) return;
+    const requestVersion = ++catalogueRequest;
     const list =
       page === "favorites" ? P.filter((p) => S.fav.includes(p.i)) : P;
-    const filtered = Catalog.filter(
-      currentProducts(list),
-      params,
-      categoryName(),
-    );
     const enabled = params.get("compat") !== "all";
-    const rows = enabled ? Compatibility.filter(filtered, S.parts) : filtered;
+    let rows, hidden;
+    target.setAttribute("aria-busy", "true");
+    try {
+      if (Backend.enabled) {
+        const result = await Backend.catalogue(
+          params,
+          S.parts,
+          page === "favorites" ? S.fav : undefined,
+        );
+        rows = result.ids.map((id) => P[Number(id.slice(1))]);
+        hidden = result.hidden;
+      } else {
+        const filtered = Catalog.filter(
+          currentProducts(list),
+          params,
+          categoryName(),
+        );
+        rows = enabled ? Compatibility.filter(filtered, S.parts) : filtered;
+        hidden = filtered.length - rows.length;
+      }
+    } catch (error) {
+      if (requestVersion === catalogueRequest && target.isConnected) {
+        $("#found").textContent = "Каталог недоступен";
+        target.innerHTML =
+          '<p class="warn">' +
+          esc(error.message) +
+          '</p><button type="button" class="btn secondary" data-action="retry-catalog">Повторить загрузку</button>';
+        $("#more").hidden = true;
+      }
+      return;
+    } finally {
+      if (requestVersion === catalogueRequest)
+        target.removeAttribute("aria-busy");
+    }
+    if (requestVersion !== catalogueRequest || !target.isConnected) return;
     $("#catalog-selected-count").textContent = Object.keys(S.parts).length;
     $("#compatible-only").checked = enabled;
     document.querySelectorAll(".category-menu a").forEach((link) => {
@@ -307,9 +436,7 @@
     });
     $("#compatibility-note").textContent = Object.keys(S.parts).length
       ? enabled
-        ? "Скрыто несовместимых моделей: " +
-          (filtered.length - rows.length) +
-          "."
+        ? "Скрыто несовместимых моделей: " + hidden + "."
         : "Показаны все модели. Несовместимые детали нельзя добавить к текущему составу."
       : "Выберите первую деталь — остальные списки подстроятся под неё.";
     $("#found").textContent = "Найдено моделей: " + rows.length;
@@ -415,16 +542,32 @@
       <p class="section info-note">Бюджет складывается из зафиксированных цен и расчётных оценок. Не включены периферия, операционная система, доставка и работа сборщика. Состав можно проверить и изменить в конфигураторе.</p>`;
     $("#task").value = params.get("task") || "";
     $("#budget").value = params.get("budget") || "";
-    drawBuilds();
+    return drawBuilds();
   }
-  function drawBuilds() {
+  async function drawBuilds() {
+    const requestVersion = ++buildsRequest;
     const task = $("#task").value,
       max = Number($("#budget").value);
-    const rows = B.filter(
-      (b) =>
-        (!task || b[1] === task) &&
-        (!max || budget(Core.buildParts(b)).value <= max),
-    );
+    let rows;
+    try {
+      rows = Backend.enabled
+        ? (await Backend.builds(task, max)).map((i) => B[i])
+        : B.filter(
+            (b) =>
+              (!task || b[1] === task) &&
+              (!max || budget(Core.buildParts(b)).value <= max),
+          );
+    } catch (error) {
+      if (requestVersion === buildsRequest) {
+        $("#build-count").textContent = "Список сборок недоступен";
+        $("#build-results").innerHTML =
+          '<p class="warn">' +
+          esc(error.message) +
+          '</p><button class="btn secondary" type="button" data-action="retry-builds">Повторить загрузку</button>';
+      }
+      return;
+    }
+    if (requestVersion !== buildsRequest) return;
     $("#build-count").textContent = "Подходящих конфигураций: " + rows.length;
     $("#build-results").innerHTML = rows.length
       ? rows.map((b) => buildCard(b)).join("")
@@ -549,7 +692,7 @@
       '</div><p class="caption">Фото относится к указанному корпусу. Остальные детали могут отличаться по внешнему виду.</p></div><div class="stack"><button class="btn" data-action="load-build" data-index="' +
       index +
       '">Изменить в конфигураторе</button><a class="btn secondary" href="builds.html">Другие сборки</a></div></aside></div><section class="section panel"><h2>Проверка состава</h2>' +
-      statusHTML(Core.check(parts)) +
+      statusHTML(check(parts)) +
       '<p class="caption">Перед покупкой проверьте поддержку CPU в BIOS, QVL памяти, разъёмы питания, крепления и расположение деталей.</p></section>';
   }
   function offersHTML(p) {
@@ -728,7 +871,7 @@
     const node = $("#builder-summary");
     if (!node) return;
     const cost = budget(S.parts),
-      result = Core.check(S.parts);
+      result = check(S.parts);
     node.innerHTML =
       '<h2>Оценка бюджета</h2><div class="price">' +
       money(cost.value) +
@@ -748,7 +891,8 @@
     const remove = document.querySelector(
       '[data-action="remove-part"][data-category="' + c + '"]',
     );
-    if (remove) remove.disabled = S.parts[c] === undefined;
+    if (remove)
+      remove.disabled = pendingChanges > 0 || S.parts[c] === undefined;
   }
   function compare() {
     const rows = S.cmp.map((i) => P[i]);
@@ -848,7 +992,7 @@
   }
   function exportBuild() {
     const cost = budget(S.parts),
-      check = Core.check(S.parts);
+      result = check(S.parts);
     const text = [
       "СОБРАНО — состав компьютера",
       "",
@@ -871,10 +1015,10 @@
       "Оценка бюджета: " + money(cost.value),
       budgetNote(cost),
       "",
-      ...check.bad,
-      ...check.unknown,
-      check.missing.length
-        ? "Ещё нужны: " + check.missing.map((c) => names[c]).join(", ")
+      ...result.bad,
+      ...result.unknown,
+      result.missing.length
+        ? "Ещё нужны: " + result.missing.map((c) => names[c]).join(", ")
         : "",
       "BIOS, QVL, разъёмы и крепления требуют ручной проверки.",
       "",
@@ -891,7 +1035,7 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action,
@@ -904,7 +1048,7 @@
       persist();
       updateActions();
       if (page === "favorites") {
-        drawProducts();
+        await drawProducts();
         $("#app").focus({ preventScroll: true });
       }
     }
@@ -929,11 +1073,10 @@
         toast(result.conflicts.join(" "));
         return;
       }
-      S.parts[p.c] = index;
-      persist();
+      if (!(await changeComposition({ ...S.parts, [p.c]: index }))) return;
       toast(p.name + " добавлен в текущую сборку.");
       if (page === "catalog" || page === "favorites") {
-        drawProducts();
+        await drawProducts();
         document
           .querySelector('[data-action="add"][data-index="' + index + '"]')
           ?.focus({ preventScroll: true });
@@ -943,28 +1086,25 @@
     if (action === "view") {
       params.set("view", button.dataset.view === "grid" ? "grid" : "list");
       history.replaceState(null, "", location.pathname + "?" + params);
-      drawProducts();
+      await drawProducts();
     }
     if (action === "more") {
       visible += 12;
-      drawProducts();
+      await drawProducts();
     }
     if (action === "load-build" && B[index]) {
-      S.parts = Core.buildParts(B[index]);
-      persist();
+      if (!(await changeComposition(Core.buildParts(B[index])))) return;
       location.href = configURL().href;
     }
     if (action === "remove-part") {
-      delete S.parts[button.dataset.category];
-      persist();
-      syncBuilderURL();
+      const next = { ...S.parts };
+      delete next[button.dataset.category];
+      if (!(await changeComposition(next))) return;
       refreshBuilderOptions();
       $("#slot-" + button.dataset.category)?.focus();
     }
     if (action === "clear-parts") {
-      S.parts = {};
-      persist();
-      syncBuilderURL();
+      if (!(await changeComposition({}))) return;
       refreshBuilderOptions();
       toast("Состав очищен.");
     }
@@ -973,6 +1113,8 @@
       persist();
       compare();
     }
+    if (action === "retry-catalog") await drawProducts();
+    if (action === "retry-builds") await drawBuilds();
     if (action === "export") exportBuild();
     if (action === "share") {
       showDialog(
@@ -1019,7 +1161,7 @@
     }
     if (event.target.id === "budget") drawBuilds();
   });
-  document.addEventListener("change", (event) => {
+  document.addEventListener("change", async (event) => {
     if (event.target.id === "compatible-only") {
       if (event.target.checked) params.delete("compat");
       else params.set("compat", "all");
@@ -1052,7 +1194,8 @@
       const c = event.target.dataset.slot,
         value = event.target.value,
         index = Number(value);
-      if (value === "") delete S.parts[c];
+      const next = { ...S.parts };
+      if (value === "") delete next[c];
       else if (Core.valid(index) && P[index].c === c) {
         const result = Compatibility.assess(P[index], S.parts);
         if (!result.allowed) {
@@ -1060,10 +1203,12 @@
           event.target.value = S.parts[c] ?? "";
           return;
         }
-        S.parts[c] = index;
+        next[c] = index;
       }
-      persist();
-      syncBuilderURL();
+      if (!(await changeComposition(next))) {
+        event.target.value = S.parts[c] ?? "";
+        return;
+      }
       refreshBuilderOptions();
     }
   });
@@ -1134,7 +1279,7 @@
   matchMedia("(min-width:901px)").addEventListener("change", (event) => {
     if ($("#filters-panel")) $("#filters-panel").open = event.matches;
   });
-  window.addEventListener("storage", (event) => {
+  window.addEventListener("storage", async (event) => {
     if (
       event.key === "sobrano:theme:v1" &&
       ["light", "dark"].includes(event.newValue)
@@ -1142,7 +1287,8 @@
       applyTheme(event.newValue);
     if (event.key === KEY) {
       try {
-        S = sanitize(JSON.parse(event.newValue || "{}"));
+        const incoming = sanitize(JSON.parse(event.newValue || "{}"));
+        if (!(await changeComposition(incoming.parts, incoming))) return;
         counters();
         updateActions();
         if (page === "builder") {
@@ -1167,7 +1313,7 @@
     product: productDetail,
     build: buildDetail,
   };
-  (renderers[page] || home)();
+  await (renderers[page] || home)();
   counters();
   $("#storage-note").hidden = storageOK;
   $("#global-search").value = params.get("search") || "";
@@ -1184,5 +1330,14 @@
     configURL,
     price: Prices.price,
     budget,
+    backend: Backend.enabled ? "python" : "static",
   };
-})();
+  return true;
+})().catch((error) => {
+  const node = document.getElementById("app");
+  const message = document.createElement("p");
+  message.className = "warn";
+  message.textContent = "Не удалось запустить интерфейс. " + error.message;
+  node.replaceChildren(message);
+  return false;
+});

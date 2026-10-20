@@ -8,6 +8,7 @@
       "program": "${workspaceFolder}/server.py",
       "args": ["--port", "8080"],
       "cwd": "${workspaceFolder}",
+      "env": { "SOBRANO_DEBUG": "1" },
       "console": "integratedTerminal",
       "justMyCode": true
     }
