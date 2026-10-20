@@ -1,1556 +1,1096 @@
-"use strict";
-
-const C = {
-    cpu: "Процессоры",
-    gpu: "Видеокарты",
-    motherboard: "Материнские платы",
-    ram: "Оперативная память",
-    storage: "SSD и HDD",
-    psu: "Блоки питания",
-    case: "Корпуса",
-    cooling: "Охлаждение"
-};
-
-const F = {
-    cpu: [
-        "Сокет", "Память", "Мощность, Вт",
-        "Встроенная графика", "Кулер в комплекте", "Ядра", "Потоки"
-    ],
-    gpu: [
-        "Потребление, Вт", "Рекомендованный БП, Вт",
-        "Длина, мм", "Видеопамять, ГБ"
-    ],
-    motherboard: [
-        "Сокет", "Память", "Форм-фактор", "Слоты RAM", "Максимум RAM, ГБ"
-    ],
-    ram: ["Тип памяти", "Объём, ГБ", "Модули", "Скорость, MT/s"],
-    storage: ["Тип", "Объём, ГБ", "Формат M.2", "Чтение до, МБ/с"],
-    psu: ["Мощность, Вт", "Форм-фактор", "Длина, мм"],
-    case: ["Платы", "Видеокарта до, мм", "Кулер до, мм", "БП до, мм"],
-    cooling: ["Сокеты", "Высота, мм"]
-};
-
-const brands = {
-    NVIDIA: "https://www.nvidia.com/",
-    AMD: "https://www.amd.com/",
-    Intel: "https://www.intel.com/",
-    MSI: "https://www.msi.com/",
-    ASRock: "https://www.asrock.com/",
-    Sapphire: "https://www.sapphiretech.com/",
-    Kingston: "https://www.kingston.com/",
-    Corsair: "https://www.corsair.com/",
-    Crucial: "https://www.crucial.com/",
-    Samsung: "https://www.samsung.com/",
-    Seagate: "https://www.seagate.com/",
-    DeepCool: "https://www.deepcool.com/",
-    ARCTIC: "https://www.arctic.de/",
-    Noctua: "https://noctua.at/",
-    Fractal: "https://www.fractal-design.com/"
-};
-
-const esc = value => String(value ?? "").replace(
-    /[&<>"']/g,
-    symbol => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    })[symbol]
-);
-
-const money = value =>
-    new Intl.NumberFormat("ru-KZ").format(value) + " ₸";
-
-const $ = selector => document.querySelector(selector);
-const cats = Object.keys(C);
-const app = $("#app");
-const dialog = $("#details");
-
-const DATA = window.SOBRANO_DATA;
-
-const P = DATA.products.map((row, index) => ({
-    i: index,
-    c: row[0],
-    name: row[1],
-    price: row[2],
-    v: row[3],
-    brand: row[1].split(" ")[0]
-}));
-
-const B = DATA.builds;
-const PH = DATA.photos;
-
-// Разные иллюстрации системных блоков.
-// Они показывают пример внешнего вида, а не точную конфигурацию.
-
-const BUILD_PHOTOS = [
-    [
-        "Игровой компьютер в корпусе Corsair iCUE 5000X",
-        "b/bd/2025_Wn%C4%99trze_komputera_PC.jpg",
-        "Jacek Halicki",
-        "by-sa"
-    ],
-    [
-        "Компьютер в корпусе Fractal Design Focus G",
-        "9/92/ATX_computer_case.jpg",
-        "Tiia Monto",
-        "by-sa"
-    ],
-    [
-        "Корпус Kolink Observatory RGB Midi-Tower",
-        "5/5b/PC-Geh%C3%A4use_Kolink_Observatory_RGB_Midi-Tower_20201120_DSC6134.jpg",
-        "PantheraLeo1359531",
-        "by"
-    ],
-    [
-        "Белый игровой ПК с жидкостным охлаждением",
-        "d/de/Ricer_gaming_PC_with_CPU_watercooler.jpg",
-        "Benlisquare",
-        "by-sa"
-    ],
-    [
-        "Системный корпус NZXT ATX",
-        "4/45/NZXT_ATX_Case_1_2019-03-21.jpg",
-        "FASTILY",
-        "by-sa"
-    ],
-    [
-        "Cooler Master Cosmos C700P Black Edition",
-        "0/0a/Cooler_Master_Cosmos_C700P_Black_Edition_20190601a.jpg",
-        "Solomon203",
-        "by-sa"
-    ],
-    [
-        "Системный блок Dell OptiPlex Mini Tower",
-        "5/5a/Optiplex_Mid-tower.jpg",
-        "RTtechPA",
-        "by-sa"
-    ],
-    [
-        "Компактный домашний HTPC",
-        "d/df/ULTRA_HD_BLU_RAY_HTPC_%28cropped%29.jpg",
-        "Danino2200",
-        "by-sa"
-    ]
-].map(([title, path, author, kind]) => {
-    const filename = path.split("/").pop();
-
-    const original =
-        "https://upload.wikimedia.org/wikipedia/commons/" + path;
-
-    const preview =
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/" +
-        path + "/960px-" + filename;
-
-    const small = path === "5/5a/Optiplex_Mid-tower.jpg";
-
+/* СОБРАНО: страницы, выбор пользователя и обработчики интерфейса.
+   Характеристики и расчёты — core.js; фильтры — catalog-ui.js;
+   фотографии — media.js; снимки магазинных цен — offers.js/pricing.js. */
+(function () {
+  "use strict";
+  const Core = window.SobranoCore;
+  const Catalog = window.SobranoCatalog;
+  const Media = window.SobranoMedia;
+  const Prices = window.SobranoPricing;
+  const P = Core.products,
+    B = Core.builds,
+    cats = Core.cats,
+    names = Core.categories;
+  const app = document.getElementById("app");
+  const $ = (selector) => document.querySelector(selector);
+  const esc = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (ch) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[ch],
+    );
+  const money = (value) => new Intl.NumberFormat("ru-KZ").format(value) + " ₸";
+  const date = (value) =>
+    new Intl.DateTimeFormat("ru-KZ", {
+      timeZone: "Asia/Qyzylorda",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date(value));
+  const symbols = {
+    cpu: "CPU",
+    gpu: "GPU",
+    motherboard: "MB",
+    ram: "RAM",
+    storage: "SSD",
+    psu: "PSU",
+    case: "CASE",
+    cooling: "FAN",
+  };
+  const KEY = "sobrano:diploma:1";
+  const page = (location.pathname.split("/").pop() || "index.html").replace(
+    /\.html$/,
+    "",
+  );
+  let params = new URLSearchParams(location.search),
+    visible = 12,
+    storageOK = true,
+    incomingError = false,
+    timer,
+    searchTimer;
+  let S = { fav: [], cmp: [], parts: {} };
+  function sanitize(value) {
+    const valid = (list) =>
+      Array.isArray(list) ? [...new Set(list.filter(Core.valid))] : [];
+    const state = value && typeof value === "object" ? value : {};
+    const cmp = valid(state.cmp).slice(0, 4);
     return {
-        title,
-        author,
-        src: small
-            ? original
-            : preview.replace("upload.wikimedia.org", "thumb.wikimedia.org"),
-        fallback: small ? original : preview,
-        original,
-        source: "https://commons.wikimedia.org/wiki/File:" + filename,
-        license: kind === "by" ? "CC BY 4.0" : "CC BY-SA 4.0",
-        licenseURL:
-            "https://creativecommons.org/licenses/" + kind + "/4.0/"
+      fav: valid(state.fav),
+      cmp: cmp.filter((i) => P[i].c === P[cmp[0]]?.c),
+      parts: Core.validateParts(state.parts),
     };
-});
-
-const BUILD_PHOTO_ORDER = [
-    6, 4, 7, 2, 3, 5, 6, 7, 1, 2, 4,
-    3, 0, 1, 2, 4, 5, 0, 3, 5, 1, 0
-];
-
-let storeOK = true;
-let S = { fav: [], cmp: [], parts: {} };
-let toastTimer;
-
-try {
-    S = {
-        ...S,
-        ...JSON.parse(localStorage.getItem("sobrano:diploma:1") || "{}")
-    };
-} catch {
-    storeOK = false;
-}
-
-const valid = index => Number.isInteger(index) && P[index];
-
-S.fav = Array.isArray(S.fav)
-    ? [...new Set(S.fav.filter(valid))]
-    : [];
-
-S.cmp = Array.isArray(S.cmp)
-    ? [...new Set(S.cmp.filter(valid))].slice(0, 4)
-    : [];
-
-if (S.cmp.some(index => P[index].c !== P[S.cmp[0]].c)) {
-    S.cmp = [];
-}
-
-S.parts = S.parts && typeof S.parts === "object"
-    ? Object.fromEntries(
-        Object.entries(S.parts).filter(
-            ([category, index]) =>
-                C[category] && valid(index) && P[index].c === category
-        )
-    )
-    : {};
-
-const page = (
-    location.pathname.split("/").pop() || "index.html"
-).replace(".html", "");
-
-let q = new URLSearchParams(location.search);
-let category = C[q.get("cat")] ? q.get("cat") : "";
-let visible = 12;
-
-if (page === "builder" && q.has("parts")) {
-    const ids = q.get("parts").split(",");
-    S.parts = {};
-
-    cats.forEach((category, index) => {
-        const productIndex = Number(ids[index]);
-
-        if (
-            ids[index] !== "" &&
-            valid(productIndex) &&
-            P[productIndex].c === category
-        ) {
-            S.parts[category] = productIndex;
-        }
-    });
-}
-
-function save() {
+  }
+  try {
+    S = sanitize(JSON.parse(localStorage.getItem(KEY) || "{}"));
+  } catch {
+    storageOK = false;
+  }
+  function persist() {
     try {
-        localStorage.setItem("sobrano:diploma:1", JSON.stringify(S));
+      localStorage.setItem(KEY, JSON.stringify(S));
     } catch {
-        storeOK = false;
-        toast("Сохранение отключено браузером.");
+      storageOK = false;
     }
-
-    $("#storage-note").hidden = storeOK;
-    counts();
-}
-
-function toast(text) {
-    $("#toast").textContent = text;
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        $("#toast").textContent = "";
-    }, 3500);
-}
-
-function counts() {
-    document.querySelectorAll("[data-count]").forEach(element => {
-        element.textContent = S[element.dataset.count].length;
+    $("#storage-note").hidden = storageOK;
+    counters();
+  }
+  // Полученная по ссылке сборка становится текущей и переживает переходы между страницами.
+  if (page === "builder" && params.has("parts")) {
+    const payload = params.get("parts");
+    const tokens = payload.split(",");
+    const validLink =
+      payload.length <= 256 &&
+      tokens.length === cats.length &&
+      tokens.every(
+        (token, position) =>
+          token === "" ||
+          (/^(0|[1-9]\d*)$/.test(token) &&
+            Core.valid(Number(token)) &&
+            P[Number(token)].c === cats[position]),
+      );
+    if (validLink) {
+      S.parts = Core.parseParts(payload);
+      persist();
+    } else incomingError = true;
+  }
+  function counters() {
+    document.querySelectorAll("[data-count]").forEach((node) => {
+      node.textContent = S[node.dataset.count].length;
     });
-}
-
-function urlState() {
-    history.replaceState(
-        null,
-        "",
-        location.pathname + (q.size ? "?" + q.toString() : "")
-    );
-}
-
-function configURL() {
+  }
+  function toast(message) {
+    $("#toast").textContent = message;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      $("#toast").textContent = "";
+    }, 4200);
+  }
+  function itemURL(p) {
+    return Catalog.itemURL(p);
+  }
+  function buildURL(index) {
+    return "build.html?id=b" + index;
+  }
+  function configURL(parts = S.parts) {
     const url = new URL("builder.html", location.href);
-
-    url.searchParams.set(
-        "parts",
-        cats.map(category => S.parts[category] ?? "").join(",")
-    );
-
+    url.searchParams.set("parts", Core.partsString(parts));
     return url;
-}
-
-function syncConfigURL() {
-    history.replaceState(null, "", configURL());
-}
-
-function photo(category, build = false, index = 0) {
-    if (!build) return PH[category];
-
-    const position = Math.max(0, index) % BUILD_PHOTO_ORDER.length;
-    return BUILD_PHOTOS[BUILD_PHOTO_ORDER[position]];
-}
-
-function visual(category, build = false, index = 0) {
-    const image = photo(category, build, index);
-
-    if (!image) {
-        return '<div class="visual"><span aria-hidden="true">▦</span></div>';
-    }
-
-    return `
-        <div class="visual ${build ? "build" : ""}">
-            <img
-                src="${esc(image.local || image.src)}"
-                data-remote="${esc(image.fallback || image.src)}"
-                ${image.original
-                    ? `data-original="${esc(image.original)}"`
-                    : ""}
-                alt="${esc(image.title)}${build
-                    ? "; пример оформления, не фото данной конфигурации"
-                    : ""}"
-                loading="lazy"
-                referrerpolicy="no-referrer"
-            >
-            <small>
-                Фото-пример ${build ? "оформления ПК" : "категории"}
-            </small>
-        </div>
-
-        ${build ? `
-            <div class="build-photo-credit">
-                ${esc(image.author)} ·
-                <a
-                    href="${esc(image.source)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >Источник</a> ·
-                <a
-                    href="${esc(image.licenseURL)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >${esc(image.license)}</a>
-            </div>
-        ` : ""}
-    `;
-}
-
-function spec(product, index) {
-    const value = product.v[index];
-
-    if (value === null || value === "" || value === undefined) {
-        return "Не указано";
-    }
-
-    if (
-        ["Встроенная графика", "Кулер в комплекте"]
-            .includes(F[product.c][index])
-    ) {
-        return Number(value) ? "Да" : "Нет";
-    }
-
-    return String(value).replaceAll(":", " / ");
-}
-
-function card(product) {
-    return `
-        <article class="card">
-            ${visual(product.c)}
-
-            <div class="body">
-                <div class="tag">${esc(C[product.c])}</div>
-
-                <h3>
-                    <button
-                        class="plain"
-                        data-a="detail"
-                        data-i="${product.i}"
-                    >${esc(product.name)}</button>
-                </h3>
-
-                <p class="caption">
-                    ${esc(
-                        F[product.c]
-                            .slice(0, 2)
-                            .map((_, index) => spec(product, index))
-                            .join(" · ")
-                    )}
-                </p>
-
-                <div class="price">${money(product.price)}</div>
-                <span class="caption">Учебная расчётная цена</span>
-
-                <div class="actions">
-                    <div class="row">
-                        <button
-                            class="btn small"
-                            data-a="add"
-                            data-i="${product.i}"
-                        >В сборку</button>
-
-                        <button
-                            class="btn small secondary"
-                            data-a="fav"
-                            data-i="${product.i}"
-                            aria-label="Избранное: ${esc(product.name)}"
-                            aria-pressed="${S.fav.includes(product.i)}"
-                        >${S.fav.includes(product.i) ? "♥" : "♡"}</button>
-
-                        <button
-                            class="btn small secondary"
-                            data-a="cmp"
-                            data-i="${product.i}"
-                            aria-pressed="${S.cmp.includes(product.i)}"
-                        >${S.cmp.includes(product.i) ? "✓" : "⇄"}</button>
-                    </div>
-                </div>
-            </div>
-        </article>
-    `;
-}
-
-function header(title, subtitle = "") {
-    return `
-        <section class="section">
-            <div class="eyebrow">СОБРАНО / локальный проект</div>
-            <h1>${title}</h1>
-            ${subtitle ? `<p class="muted">${subtitle}</p>` : ""}
-    `;
-}
-
-function notice() {
-    return `
-        <p class="warn">
-            Все цены — учебные оценки в ₸.
-            Доставка, сборка, ОС и периферия не включены.
-            Это не предложения магазинов.
-        </p>
-    `;
-}
-
-function stats() {
-    return `
-        <div class="stats">
-            <div class="panel">
-                <strong>${P.length}</strong>реальных моделей
-            </div>
-            <div class="panel">
-                <strong>${B.length}</strong>вариантов сборки
-            </div>
-            <div class="panel">
-                <strong>8</strong>категорий
-            </div>
-        </div>
-    `;
-}
-
-function home() {
-    const featured = P
-        .filter(product =>
-            ["cpu", "gpu", "ram", "storage"].includes(product.c)
+  }
+  function syncBuilderURL() {
+    if (page === "builder") history.replaceState(null, "", configURL());
+  }
+  function budget(parts) {
+    return Prices.budget(Core.validateParts(parts), P);
+  }
+  function priceLabel(info) {
+    return info.kind === "snapshot"
+      ? "Зафиксированная цена · " + date(info.offer.checkedAt)
+      : "Расчётная цена";
+  }
+  function priceHTML(p) {
+    const info = Prices.price(p);
+    return (
+      '<div class="price">' +
+      money(info.value) +
+      '</div><div class="price-kind">' +
+      esc(priceLabel(info)) +
+      "</div>"
+    );
+  }
+  function crumb(items = []) {
+    return (
+      '<nav class="breadcrumb" aria-label="Хлебные крошки"><a href="index.html">Главная</a>' +
+      items
+        .map(
+          ([text, href]) =>
+            '<span aria-hidden="true">/</span>' +
+            (href
+              ? '<a href="' + esc(href) + '">' + esc(text) + "</a>"
+              : '<span aria-current="page">' + esc(text) + "</span>"),
         )
-        .filter((product, index, array) =>
-            index === array.findIndex(item => item.c === product.c)
-        );
-
-    app.innerHTML = `
-        <section class="hero">
-            <div>
-                <div class="eyebrow">Выбор под контролем</div>
-
-                <h1>
-                    Твой следующий ПК.<br>
-                    <em>Начни с деталей.</em>
-                </h1>
-
-                <p class="muted">
-                    Каталог, сравнение и готовые конфигурации.
-                    Рассчитывай бюджет и собирай компьютер прямо здесь.
-                </p>
-
-                <div class="row">
-                    <a class="btn" href="catalog.html">
-                        Выбрать комплектующие →
-                    </a>
-                    <a class="btn secondary" href="builds.html">
-                        Готовые сборки
-                    </a>
-                </div>
-            </div>
-
-            <div>
-                ${visual("case", true, 4)}
-                <p class="caption">
-                    Пример оформления компьютера.
-                    Внешний вид выбранной сборки может отличаться.
-                </p>
-            </div>
-        </section>
-
-        ${stats()}
-
-        <section class="section">
-            <div class="row space">
-                <h2>Найди нужную деталь</h2>
-                <a class="link" href="catalog.html">Весь каталог →</a>
-            </div>
-
-            <div class="categories">
-                ${cats.map(category => `
-                    <a
-                        class="btn secondary"
-                        href="catalog.html?cat=${category}"
-                    >
-                        ${C[category]} ·
-                        ${P.filter(product => product.c === category).length}
-                    </a>
-                `).join("")}
-            </div>
-
-            <div class="grid">${featured.map(card).join("")}</div>
-        </section>
-
-        <section class="section">
-            <div class="row space">
-                <h2>Готовые конфигурации</h2>
-                <a class="link" href="builds.html">Все сборки →</a>
-            </div>
-
-            <div class="grid">
-                ${B.slice(0, 4).map(buildCard).join("")}
-            </div>
-        </section>
-    `;
-}
-
-function catalogue(favoritesOnly = false) {
-    const list = favoritesOnly
-        ? P.filter(product => S.fav.includes(product.i))
-        : P;
-
-    const availableBrands = [...new Set(
-        list
-            .filter(product => !category || product.c === category)
-            .map(product => product.brand)
-    )].sort();
-
-    app.innerHTML = header(
-        favoritesOnly ? "Избранное" : "Комплектующие для твоего ПК",
-        favoritesOnly
-            ? "Сохраняй варианты для будущей сборки."
-            : "Цены и характеристики на одном экране."
-    ) + `
-        <div class="categories">
-            <button
-                data-cat=""
-                class="${!category ? "active" : ""}"
-            >Все · ${list.length}</button>
-
-            ${cats.map(item => `
-                <button
-                    data-cat="${item}"
-                    class="${category === item ? "active" : ""}"
-                >
-                    ${C[item]} ·
-                    ${list.filter(product => product.c === item).length}
-                </button>
-            `).join("")}
+        .join("") +
+      "</nav>"
+    );
+  }
+  function heading(title, description = "", crumbs = [[title]]) {
+    return (
+      crumb(crumbs) +
+      '<div class="page-heading"><h1>' +
+      esc(title) +
+      "</h1>" +
+      (description ? "<p>" + esc(description) + "</p>" : "") +
+      "</div>"
+    );
+  }
+  function empty(
+    title,
+    text,
+    href = "catalog.html",
+    action = "Перейти в каталог",
+  ) {
+    return (
+      '<div class="empty"><h2>' +
+      esc(title) +
+      "</h2><p>" +
+      esc(text) +
+      '</p><a class="btn" href="' +
+      esc(href) +
+      '">' +
+      esc(action) +
+      "</a></div>"
+    );
+  }
+  function productRow(p) {
+    const info = Prices.price(p);
+    return `<article class="product-row" data-product="${p.id}">
+      ${Media.render(p)}
+      <div class="product-info">
+        <div class="product-category">${esc(names[p.c])}</div>
+        <h2><a href="${itemURL(p)}">${esc(p.name)}</a></h2>
+        <ul class="brief-list">${Core.brief(p)
+          .map((text) => "<li>" + esc(text) + "</li>")
+          .join("")}</ul>
+      </div>
+      <div class="product-price">
+        ${priceHTML(p)}
+        ${info.count ? '<a class="shop-count" href="' + itemURL(p) + '#offers">Предложения магазинов: ' + info.count + "</a>" : ""}
+        <div class="product-utilities">
+          <button type="button" class="icon-button" data-action="favorite" data-index="${p.i}" aria-label="В избранное: ${esc(p.name)}" aria-pressed="${S.fav.includes(p.i)}">${S.fav.includes(p.i) ? "♥" : "♡"}</button>
+          <button type="button" class="icon-button" data-action="compare" data-index="${p.i}" aria-label="Сравнить: ${esc(p.name)}" aria-pressed="${S.cmp.includes(p.i)}">${S.cmp.includes(p.i) ? "✓" : "⇄"}</button>
         </div>
-
-        <div class="panel filters">
-            <label>
-                Поиск
-                <input
-                    id="search"
-                    type="search"
-                    placeholder="Модель, бренд, DDR5…"
-                    value="${esc(q.get("search") || "")}"
-                >
-            </label>
-
-            <label>
-                Бренд
-                <select id="brand">
-                    <option value="">Все бренды</option>
-
-                    ${availableBrands.map(brand => `
-                        <option
-                            value="${esc(brand)}"
-                            ${q.get("brand") === brand ? "selected" : ""}
-                        >${esc(brand)}</option>
-                    `).join("")}
+        <button type="button" class="btn" data-action="add" data-index="${p.i}">В сборку</button>
+      </div>
+    </article>`;
+  }
+  function currentProducts(list = P) {
+    return list.map((p) => ({ ...p, displayPrice: Prices.price(p).value }));
+  }
+  function categoryName() {
+    const value = params.get("cat");
+    return cats.includes(value) ? value : "";
+  }
+  function catalogue(favorites = false) {
+    const category = categoryName();
+    const list = favorites ? P.filter((p) => S.fav.includes(p.i)) : P;
+    const action = favorites ? "favorites.html" : "catalog.html";
+    const categoryHref = (c) => action + (c ? "?cat=" + c : "");
+    const title = favorites
+      ? "Избранные комплектующие"
+      : category
+        ? names[category]
+        : "Каталог комплектующих";
+    app.innerHTML =
+      heading(
+        title,
+        favorites
+          ? "Сохранённые модели доступны в этом браузере."
+          : "Сравните характеристики и добавьте подходящие компоненты в сборку.",
+        category
+          ? [["Каталог", "catalog.html"], [names[category]]]
+          : [[favorites ? "Избранное" : "Каталог"]],
+      ) +
+      `<div class="catalog-layout">
+        <aside class="catalog-sidebar" aria-label="Категории и фильтры">
+          <nav class="category-menu" aria-label="Категории комплектующих">
+            <a href="${action}" class="${!category ? "active" : ""}">Все категории <small>${list.length}</small></a>
+            ${cats.map((c) => '<a href="' + categoryHref(c) + '" class="' + (category === c ? "active" : "") + '">' + esc(names[c]) + "<small>" + list.filter((p) => p.c === c).length + "</small></a>").join("")}
+          </nav>
+          <label class="category-mobile" for="category-select">Категория
+            <select id="category-select"><option value="">Все комплектующие</option>${cats.map((c) => '<option value="' + c + '"' + (c === category ? " selected" : "") + ">" + esc(names[c]) + "</option>").join("")}</select>
+          </label>
+          <details id="filters-panel" class="filter-disclosure" ${matchMedia("(min-width:901px)").matches ? "open" : ""}>
+            <summary>Фильтры</summary>
+            ${Catalog.filterPanel({ category, params, products: currentProducts(list), action })}
+          </details>
+        </aside>
+        <section aria-label="Список комплектующих">
+          <div class="catalog-toolbar">
+            <p id="found" aria-live="polite"></p>
+            <div class="row">
+              <label class="sort-field" for="sort">Порядок
+                <select id="sort" name="sort" form="catalog-filters">
+                  <option value="name">По названию</option><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option>
                 </select>
-            </label>
-
-            <label>
-                Цена от, ₸
-                <input
-                    id="min"
-                    type="number"
-                    min="0"
-                    value="${esc(q.get("min") || "")}"
-                >
-            </label>
-
-            <label>
-                Цена до, ₸
-                <input
-                    id="max"
-                    type="number"
-                    min="0"
-                    value="${esc(q.get("max") || "")}"
-                >
-            </label>
-
-            <label>
-                Сортировка
-                <select id="sort">
-                    ${[
-                        ["name", "По названию"],
-                        ["asc", "Сначала дешевле"],
-                        ["desc", "Сначала дороже"]
-                    ].map(([value, text]) => `
-                        <option
-                            value="${value}"
-                            ${q.get("sort") === value ? "selected" : ""}
-                        >${text}</option>
-                    `).join("")}
-                </select>
-            </label>
-        </div>
-
-        <div class="row space">
-            <p id="found" class="count" aria-live="polite"></p>
-
-            <button
-                class="btn secondary small"
-                data-a="reset"
-            >Сбросить фильтры</button>
-        </div>
-
-        <div id="results" class="grid"></div>
-
-        <div class="section row" style="justify-content:center">
-            <button
-                id="more"
-                class="btn secondary"
-                data-a="more"
-            >Показать ещё</button>
-        </div>
+              </label>
+              <div class="view-switch" role="group" aria-label="Вид каталога">
+                <button type="button" data-action="view" data-view="list">Список</button>
+                <button type="button" data-action="view" data-view="grid">Плитка</button>
+              </div>
+            </div>
+          </div>
+          <div id="results" class="catalog-results"></div>
+          <div class="more-row"><button type="button" id="more" class="btn secondary" data-action="more">Показать ещё</button></div>
+          <p class="caption">Зафиксированные цены имеют дату. Для остальных моделей показаны расчётные оценки. <a href="about.html#prices">Подробнее о ценах</a></p>
         </section>
-    `;
-
+      </div>`;
+    $("#sort").value = ["asc", "desc"].includes(params.get("sort"))
+      ? params.get("sort")
+      : "name";
     drawProducts();
-}
-
-function drawProducts() {
+  }
+  function drawProducts() {
     if (!$("#results")) return;
-
-    const terms = (q.get("search") || "")
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(Boolean);
-
-    const rows = P.filter(product =>
-        (page !== "favorites" || S.fav.includes(product.i)) &&
-        (!category || product.c === category) &&
-        (!q.get("brand") || product.brand === q.get("brand")) &&
-        (!q.get("min") || product.price >= Number(q.get("min"))) &&
-        (!q.get("max") || product.price <= Number(q.get("max"))) &&
-        terms.every(term =>
-            (
-                product.name + " " +
-                product.brand + " " +
-                product.v.join(" ")
-            ).toLowerCase().includes(term)
-        )
-    );
-
-    rows.sort((a, b) => {
-        if (q.get("sort") === "asc") return a.price - b.price;
-        if (q.get("sort") === "desc") return b.price - a.price;
-        return a.name.localeCompare(b.name, "ru");
-    });
-
-    $("#found").textContent = "Найдено: " + rows.length;
-
+    const list =
+      page === "favorites" ? P.filter((p) => S.fav.includes(p.i)) : P;
+    const rows = Catalog.filter(currentProducts(list), params, categoryName());
+    $("#found").textContent = "Найдено моделей: " + rows.length;
+    $("#results").className =
+      "catalog-results" +
+      (params.get("view") === "grid" ? " catalog-grid" : "");
     $("#results").innerHTML = rows.length
-        ? rows.slice(0, visible).map(card).join("")
-        : '<p class="empty">Ничего не найдено. Измени поиск или сбрось фильтры.</p>';
-
+      ? rows.slice(0, visible).map(productRow).join("")
+      : empty(
+          "Моделей не найдено",
+          page === "favorites" && !list.length
+            ? "Добавьте интересующие модели кнопкой с сердцем в каталоге."
+            : "Попробуйте изменить параметры поиска или сбросить фильтры.",
+        );
     $("#more").hidden = rows.length <= visible;
-}
-
-function product(index) {
-    const item = P[index];
-    if (!item) return;
-
-    const image = photo(item.c);
-
-    show(`
-        <div class="detail">
-            <div>
-                ${visual(item.c)}
-                <p class="caption">
-                    ${esc(image?.title || "")} — фото-пример категории.
-                </p>
-            </div>
-
-            <div>
-                <span class="tag">${C[item.c]}</span>
-                <h2>${esc(item.name)}</h2>
-                <div class="price">${money(item.price)}</div>
-                <span class="pill">Учебная расчётная цена</span>
-
-                <p class="muted">
-                    Основные характеристики из локального набора данных.
-                </p>
-
-                <div class="row">
-                    <button
-                        class="btn"
-                        data-a="add"
-                        data-i="${index}"
-                    >Добавить в сборку</button>
-
-                    <button
-                        class="btn secondary"
-                        data-a="cmp"
-                        data-i="${index}"
-                    >Сравнить</button>
-                </div>
-            </div>
-        </div>
-
-        <h3>Характеристики</h3>
-
-        <table class="specs">
-            ${F[item.c].map((title, i) => `
-                <tr>
-                    <th>${title}</th>
-                    <td>${esc(spec(item, i))}</td>
-                </tr>
-            `).join("")}
-        </table>
-
-        <p class="caption">
-            Профили памяти зависят от BIOS и контроллера CPU.
-            Комплектацию и конкретное исполнение нужно проверять.
-        </p>
-
-        ${brands[item.brand] ? `
-            <a
-                class="link"
-                href="${brands[item.brand]}"
-                target="_blank"
-                rel="noopener noreferrer"
-            >Официальный сайт бренда ↗</a>
-        ` : ""}
-    `);
-}
-
-function show(html) {
-    dialog.innerHTML = `
-        <button
-            class="btn secondary small close"
-            data-a="close"
-            aria-label="Закрыть окно"
-        >Закрыть ×</button>
-
-        <div style="clear:both">${html}</div>
-    `;
-
-    if (!dialog.open) dialog.showModal();
-}
-
-function compare() {
-    const rows = S.cmp.map(index => P[index]);
-
-    app.innerHTML = header(
-        "Сравнение комплектующих",
-        "До четырёх моделей одной категории. Различия выделены."
-    ) + (rows.length ? `
-        <div class="row space">
-            <label class="toggle">
-                <input id="diff" type="checkbox">Только различия
-            </label>
-
-            <button
-                class="btn secondary small"
-                data-a="clearcmp"
-            >Очистить</button>
-        </div>
-
-        <div class="section scroll">
-            <table class="compare">
-                <thead>
-                    <tr>
-                        <th>Характеристика</th>
-
-                        ${rows.map(item => `
-                            <th>
-                                ${esc(item.name)}
-                                <p class="price">${money(item.price)}</p>
-                                <button
-                                    class="btn secondary small"
-                                    data-a="cmp"
-                                    data-i="${item.i}"
-                                >Убрать</button>
-                            </th>
-                        `).join("")}
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${F[rows[0].c].map((title, index) => {
-                        const different = new Set(
-                            rows.map(item => spec(item, index))
-                        ).size > 1;
-
-                        return `
-                            <tr class="${different ? "diff" : "same"}">
-                                <th>${title}</th>
-                                ${rows.map(item => `
-                                    <td>${esc(spec(item, index))}</td>
-                                `).join("")}
-                            </tr>
-                        `;
-                    }).join("")}
-                </tbody>
-            </table>
-        </div>
-    ` : `
-        <div class="empty">
-            Добавь товары кнопкой ⇄ в каталоге.
-            <p><a class="btn" href="catalog.html">Открыть каталог</a></p>
-        </div>
-    `) + "</section>";
-}
-
-function total(parts) {
-    return Object.values(parts)
-        .filter(valid)
-        .reduce((sum, index) => sum + P[index].price, 0);
-}
-
-function check(parts) {
-    const get = category =>
-        valid(parts[category]) ? P[parts[category]] : null;
-
-    const cpu = get("cpu");
-    const board = get("motherboard");
-    const ram = get("ram");
-    const gpu = get("gpu");
-    const psu = get("psu");
-    const box = get("case");
-    const cooler = get("cooling");
-
-    const bad = [];
-
-    const missing = [
-        "cpu", "motherboard", "ram", "storage", "psu", "case"
-    ].filter(category => !get(category));
-
-    if (cpu && !Number(cpu.v[3]) && !gpu) missing.push("gpu");
-    if (cpu && !Number(cpu.v[4]) && !cooler) missing.push("cooling");
-
-    if (
-        cpu && board &&
-        cpu.v[0] && board.v[0] &&
-        cpu.v[0] !== board.v[0]
-    ) {
-        bad.push("Сокеты CPU и платы отличаются");
-    }
-
-    if (board && ram && board.v[1] !== ram.v[0]) {
-        bad.push("Тип памяти не поддерживается платой");
-    }
-
-    if (board && ram && Number(ram.v[1]) > Number(board.v[4])) {
-        bad.push("Превышен объём памяти платы");
-    }
-
-    if (board && ram && Number(ram.v[2]) > Number(board.v[3])) {
-        bad.push("Недостаточно слотов памяти");
-    }
-
-    if (
-        cpu && cooler &&
-        cooler.v[0] &&
-        !cooler.v[0].split(":").includes(cpu.v[0])
-    ) {
-        bad.push("Нет заявленного крепления кулера для CPU");
-    }
-
-    if (
-        board && box &&
-        box.v[0] &&
-        !box.v[0].split(":").includes(board.v[2])
-    ) {
-        bad.push("Плата не помещается в корпус");
-    }
-
-    if (gpu && box && Number(gpu.v[2]) > Number(box.v[1])) {
-        bad.push("Видеокарта длиннее допуска корпуса");
-    }
-
-    if (cooler && box && Number(cooler.v[1]) > Number(box.v[2])) {
-        bad.push("Кулер выше допуска корпуса");
-    }
-
-    if (psu && box && Number(psu.v[2]) > Number(box.v[3])) {
-        bad.push("БП длиннее допуска корпуса");
-    }
-
-    const cpuPower =
-        (Number(cpu?.v[2]) || 0) *
-        (Number(cpu?.v[7]) ? 1 : 1.5);
-
-    const need = Math.ceil(Math.max(
-        (cpuPower + (Number(gpu?.v[0]) || 0) + 75) * 1.25,
-        Number(gpu?.v[1]) || 0
-    ) / 50) * 50;
-
-    if (psu && Number(psu.v[0]) < need) {
-        bad.push("Мощность БП ниже расчётной: " + need + " Вт");
-    }
-
-    return { bad, missing, need };
-}
-
-function bparts(build) {
-    return Object.fromEntries(
-        cats
-            .map((category, index) => [category, build[3][index]])
-            .filter(([, index]) => valid(index))
+    document.querySelectorAll('[data-action="view"]').forEach((button) => {
+      button.setAttribute(
+        "aria-pressed",
+        String((params.get("view") || "list") === button.dataset.view),
+      );
+    });
+  }
+  function readFilters(close = false) {
+    const form = $("#catalog-filters");
+    if (!form) return;
+    const next = new URLSearchParams();
+    for (const [key, value] of new FormData(form))
+      if (String(value).trim()) next.set(key, String(value).trim());
+    if (params.get("view") === "grid") next.set("view", "grid");
+    params = next;
+    visible = 12;
+    history.replaceState(
+      null,
+      "",
+      location.pathname + (params.size ? "?" + params : ""),
     );
-}
-
-function buildCard(build) {
-    const parts = bparts(build);
-    const index = B.indexOf(build);
-
-    return `
-        <article class="card">
-            ${visual("case", true, index)}
-
-            <div class="body">
-                <span class="tag">${esc(build[1])}</span>
-                <h3>${esc(build[0])}</h3>
-                <p class="caption">${esc(build[2])}</p>
-                <div class="price">${money(total(parts))}</div>
-                <span class="caption">Учебная стоимость компонентов</span>
-
-                <div class="actions">
-                    <button
-                        class="btn secondary"
-                        data-a="build"
-                        data-i="${index}"
-                    >Состав и детали →</button>
-                </div>
-            </div>
-        </article>
-    `;
-}
-
-function builds() {
-    app.innerHTML = header(
-        "Готовые сборки ПК",
-        "От первого компьютера до игровой и рабочей станции."
-    ) + `
-        <div class="panel filters">
-            <label>
-                Задача
-                <select id="task">
-                    <option value="">Все сценарии</option>
-
-                    ${[...new Set(B.map(build => build[1]))].map(task => `
-                        <option value="${esc(task)}">${esc(task)}</option>
-                    `).join("")}
-                </select>
-            </label>
-
-            <label>
-                Бюджет до, ₸
-                <input
-                    id="budget"
-                    type="number"
-                    min="0"
-                    placeholder="Без ограничений"
-                >
-            </label>
-        </div>
-
-        <p id="found" class="count"></p>
-        <div id="build-results" class="grid"></div>
-        </section>
-    `;
-
-    drawBuilds();
-}
-
-function drawBuilds() {
-    const rows = B.filter(build =>
-        (!$("#task").value || build[1] === $("#task").value) &&
-        (
-            !$("#budget").value ||
-            total(bparts(build)) <= Number($("#budget").value)
+    drawProducts();
+    if (close && !matchMedia("(min-width:901px)").matches)
+      $("#filters-panel").open = false;
+  }
+  function buildTitle(build) {
+    const parts = Core.buildParts(build),
+      cpu = P[parts.cpu];
+    return (
+      build[0] +
+      (cpu
+        ? " — " + cpu.name.replace(/^AMD |^Intel /, "").replace(/ OEM$/, "")
+        : "")
+    );
+  }
+  function buildSpecs(parts) {
+    return [
+      ["CPU", P[parts.cpu]?.name],
+      ["GPU", P[parts.gpu]?.name || "Встроенная графика CPU"],
+      [
+        "RAM",
+        P[parts.ram]
+          ? Core.spec(P[parts.ram], 1) + " " + Core.spec(P[parts.ram], 0)
+          : "Не выбрана",
+      ],
+      [
+        "SSD",
+        P[parts.storage]
+          ? Core.spec(P[parts.storage], 1) +
+            " · " +
+            Core.spec(P[parts.storage], 0)
+          : "Не выбран",
+      ],
+    ];
+  }
+  function buildCard(build, index = B.indexOf(build)) {
+    const parts = Core.buildParts(build),
+      cost = budget(parts);
+    return `<article class="build-card">
+      <div class="build-card-top">${P[parts.case] ? Media.render(P[parts.case]) : ""}<div><span class="badge">${esc(build[1])}</span><h2><a href="${buildURL(index)}">${esc(buildTitle(build))}</a></h2></div></div>
+      <dl class="build-specs">${buildSpecs(parts)
+        .map(
+          ([key, value]) =>
+            "<div><dt>" + key + "</dt><dd>" + esc(value) + "</dd></div>",
         )
+        .join("")}</dl>
+      <div class="build-card-bottom"><div class="price">${money(cost.value)}</div><div class="price-kind">Оценка бюджета компонентов</div><a class="btn secondary small" href="${buildURL(index)}">Состав сборки</a></div>
+    </article>`;
+  }
+  function home() {
+    const storeModels = new Set(Prices.offers.map((x) => x.productId)).size;
+    app.innerHTML = `<section class="home-intro"><div><h1>Комплектующие и сборки ПК</h1><p>Характеристики, сравнение моделей и расчёт бюджета компьютера. Подберите компоненты под свою задачу.</p></div><p class="home-facts">${P.length} моделей · ${B.length} конфигурации · Казахстан</p></section>
+      <section aria-labelledby="categories-heading"><div class="section-heading"><h2 id="categories-heading">Категории комплектующих</h2></div><div class="category-grid">${cats.map((c) => '<a class="category-tile" href="' + Catalog.categoryURL(c) + '"><span class="category-symbol" aria-hidden="true">' + symbols[c] + "</span><div><strong>" + esc(names[c]) + "</strong><small>" + P.filter((p) => p.c === c).length + " моделей</small></div></a>").join("")}</div></section>
+      <div class="tools-strip"><a class="tool-link" href="builder.html"><strong>Собрать компьютер →</strong><span>Выбор компонентов и проверка основных ограничений.</span></a><a class="tool-link" href="builds.html"><strong>Выбрать готовую сборку →</strong><span>Состав, стоимость и возможность заменить детали.</span></a><a class="tool-link" href="compare.html"><strong>Сравнить модели →</strong><span>Характеристики до четырёх комплектующих рядом.</span></a></div>
+      <section class="section"><div class="section-heading"><h2>Готовые конфигурации</h2><a href="builds.html">Все ${B.length} сборки →</a></div><div class="build-grid">${[B[0], B[3], B[1]].map((b) => buildCard(b)).join("")}</div></section>
+      <section class="section"><div class="section-heading"><h2>Комплектующие в каталоге</h2><a href="catalog.html">Открыть каталог →</a></div><div class="catalog-results">${[P[2], P[16], P[28], P[30]].map(productRow).join("")}</div></section>
+      <section class="section info-note">${storeModels ? "Для " + storeModels + " моделей есть снимки предложений магазинов с датой фиксации. " : ""}Остальные цены — расчётные оценки. Итог сборки помогает планировать бюджет и не является предложением о продаже. <a href="about.html#prices">Как устроены цены</a></section>`;
+  }
+  function builds() {
+    app.innerHTML =
+      heading(
+        "Готовые сборки ПК",
+        "Выберите состав под свою задачу и при необходимости замените компоненты.",
+      ) +
+      `<form id="build-filters" class="build-filters"><label for="task">Назначение<select id="task" name="task"><option value="">Все задачи</option>${[...new Set(B.map((b) => b[1]))].map((task) => "<option>" + esc(task) + "</option>").join("")}</select></label><label for="budget">Бюджет до, ₸<input id="budget" name="budget" type="number" min="0" placeholder="Без ограничения"></label><button type="submit" class="btn secondary">Подобрать</button></form>
+      <p id="build-count" class="count-note" aria-live="polite"></p><div id="build-results" class="build-grid"></div>
+      <p class="section info-note">Бюджет складывается из зафиксированных цен и расчётных оценок. Не включены периферия, операционная система, доставка и работа сборщика. Состав можно проверить и изменить в конфигураторе.</p>`;
+    $("#task").value = params.get("task") || "";
+    $("#budget").value = params.get("budget") || "";
+    drawBuilds();
+  }
+  function drawBuilds() {
+    const task = $("#task").value,
+      max = Number($("#budget").value);
+    const rows = B.filter(
+      (b) =>
+        (!task || b[1] === task) &&
+        (!max || budget(Core.buildParts(b)).value <= max),
     );
-
-    $("#found").textContent = "Конфигураций: " + rows.length;
-
+    $("#build-count").textContent = "Подходящих конфигураций: " + rows.length;
     $("#build-results").innerHTML = rows.length
-        ? rows.map(buildCard).join("")
-        : '<p class="empty">Сборок по этому бюджету нет. Измени фильтр.</p>';
-}
-
-function buildDetail(index) {
-    const build = B[index];
-    if (!build) return;
-
-    const parts = bparts(build);
-    const result = check(parts);
-
-    show(`
-        <span class="tag">${esc(build[1])}</span>
-        <h2>${esc(build[0])}</h2>
-        <p>${esc(build[2])}</p>
-        <div class="price">${money(total(parts))}</div>
-        ${notice()}
-
-        <table class="specs">
-            ${cats.map(category => `
-                <tr>
-                    <th>${C[category]}</th>
-                    <td>
-                        ${parts[category] !== undefined
-                            ? esc(P[parts[category]].name)
-                            : category === "gpu"
-                                ? "Встроенная графика CPU"
-                                : "Комплектный кулер CPU"}
-                    </td>
-                    <td>
-                        ${parts[category] !== undefined
-                            ? money(P[parts[category]].price)
-                            : "Включено"}
-                    </td>
-                </tr>
-            `).join("")}
-        </table>
-
-        <p class="${result.bad.length ? "bad" : "good"}">
-            ${result.bad.length
-                ? esc(result.bad.join("; "))
-                : "Проверенные базовые ограничения соблюдены."}
-        </p>
-
-        <p class="caption">
-            BIOS, QVL, кабели, охлаждение и физическая совместимость
-            требуют ручной проверки.
-        </p>
-
-        <button
-            class="btn"
-            data-a="load"
-            data-i="${index}"
-        >Изменить в конфигураторе →</button>
-    `);
-}
-
-function builder() {
-    const result = check(S.parts);
-
-    app.innerHTML = header(
-        "Собери свой компьютер",
-        "Выбери детали, проверь ограничения и сохрани состав."
-    ) + `
-        <div class="builder">
-            <div class="panel">
-                ${cats.map(category => `
-                    <div class="slot">
-                        <label for="slot-${category}">${C[category]}</label>
-
-                        <select id="slot-${category}" data-slot="${category}">
-                            <option value="">
-                                ${category === "gpu"
-                                    ? "Встроенная графика / не выбран"
-                                    : category === "cooling"
-                                        ? "Комплектный / не выбран"
-                                        : "Выбрать компонент"}
-                            </option>
-
-                            ${P.filter(product => product.c === category)
-                                .sort((a, b) => a.price - b.price)
-                                .map(product => `
-                                    <option
-                                        value="${product.i}"
-                                        ${S.parts[category] === product.i
-                                            ? "selected" : ""}
-                                    >
-                                        ${esc(product.name)}
-                                        · ${money(product.price)}
-                                    </option>
-                                `).join("")}
-                        </select>
-
-                        <button
-                            class="btn secondary small"
-                            data-a="remove"
-                            data-cat="${category}"
-                            aria-label="Убрать ${C[category]}"
-                        >×</button>
-                    </div>
-                `).join("")}
-            </div>
-
-            <aside class="panel summary">
-                <span class="tag">Стоимость компонентов</span>
-
-                <div class="price" style="font-size:34px">
-                    ${money(total(S.parts))}
-                </div>
-
-                <p class="caption">Учебная расчётная стоимость</p>
-                <h3>Проверка сборки</h3>
-
-                ${result.bad.map(text => `
-                    <p class="bad">✕ ${esc(text)}</p>
-                `).join("")}
-
-                ${result.missing.length
-                    ? `
-                        <p class="muted">
-                            Ещё нужны:
-                            ${result.missing
-                                .map(category => C[category].toLowerCase())
-                                .join(", ")}.
-                        </p>
-                    `
-                    : !result.bad.length
-                        ? '<p class="good">✓ Базовые ограничения соблюдены.</p>'
-                        : ""}
-
-                <p class="caption">
-                    Расчётный минимум БП: ${result.need} Вт.
-                    Проверь также качество и разъёмы блока питания.
-                </p>
-
-                <p class="warn">
-                    Проверь BIOS, QVL, кабели, крепления,
-                    охлаждение и геометрию перед покупкой.
-                </p>
-
-                <div class="stack">
-                    <button class="btn" data-a="export">
-                        Скачать состав .txt
-                    </button>
-                    <button class="btn secondary" data-a="share">
-                        Ссылка на сборку
-                    </button>
-                    <button
-                        class="btn secondary danger"
-                        data-a="clearparts"
-                    >Очистить состав</button>
-                </div>
-            </aside>
-        </div>
-        </section>
-    `;
-}
-
-function about() {
-    const images = [...Object.values(PH), ...BUILD_PHOTOS]
-        .filter((image, index, array) =>
-            array.findIndex(item => item.source === image.source) === index
+      ? rows.map((b) => buildCard(b)).join("")
+      : empty(
+          "Сборок с такими параметрами нет",
+          "Измените назначение или увеличьте бюджет.",
+          "builder.html",
+          "Собрать свой компьютер",
         );
-
-    app.innerHTML = header(
-        "О проекте СОБРАНО",
-        "Независимый локальный информационный сервис."
-    ) + `
-        <div class="panel">
-            <h2>Как устроен проект</h2>
-            <p>
-                Названия моделей реальны.
-                Характеристики сокращены до основных параметров.
-                Цены — учебные оценки для демонстрации расчётов.
-            </p>
-            <p>
-                HTML задаёт каркас страницы, CSS отвечает за оформление.
-                В data.js хранятся данные, в app.js — логика интерфейса.
-            </p>
-            <p>
-                Избранное, сравнение и конфигурация сохраняются
-                в localStorage браузера.
-            </p>
-            <p>
-                Фотографии показывают примеры внешнего вида.
-                Они не подтверждают внешний вид конкретной конфигурации.
-            </p>
-            <p>
-                Manrope подключён через Google Fonts под
-                SIL Open Font License 1.1.
-            </p>
-
-            <h3>Фотографии и авторство</h3>
-            <ul>
-                ${images.map(image => `
-                    <li>
-                        <a
-                            class="link"
-                            href="${esc(image.source)}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >${esc(image.title)}</a>
-
-                        · ${esc(image.author)} ·
-
-                        <a
-                            class="link"
-                            href="${esc(image.licenseURL)}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >${esc(image.license)}</a>
-                    </li>
-                `).join("")}
-            </ul>
-        </div>
-        </section>
-    `;
-}
-
-function render() {
-    const routes = {
-        index: home,
-        catalog: catalogue,
-        builds,
-        builder,
-        favorites: () => catalogue(true),
-        compare,
-        about
+  }
+  function statusHTML(result) {
+    const labels = {
+      ok: "Базовые ограничения соблюдены",
+      conflict: "Есть конфликт компонентов",
+      incomplete: "Состав ещё не завершён",
+      unknown: "Недостаточно данных для полной проверки",
     };
-
-    (routes[page] || home)();
-    counts();
-
-    document.querySelectorAll("nav a").forEach(link => {
-        if (link.getAttribute("href") === page + ".html") {
-            link.setAttribute("aria-current", "page");
-        }
-    });
-
-    if (!storeOK) $("#storage-note").hidden = false;
-}
-
-function refreshCards() {
-    if (page === "index") home();
-    if (page === "catalog" || page === "favorites") drawProducts();
-    if (page === "compare") compare();
-    counts();
-}
-
-document.addEventListener("error", event => {
-    const image = event.target;
-    if (image.tagName !== "IMG") return;
-
-    if (image.dataset.remote && image.src !== image.dataset.remote) {
-        const next = image.dataset.remote;
-        delete image.dataset.remote;
-        image.src = next;
-    } else if (
-        image.dataset.original &&
-        image.src !== image.dataset.original
-    ) {
-        const next = image.dataset.original;
-        delete image.dataset.original;
-        image.src = next;
-    } else {
-        image.replaceWith(
-            Object.assign(document.createElement("span"), {
-                textContent: "Изображение недоступно"
-            })
-        );
-    }
-}, true);
-
-document.addEventListener("click", event => {
-    const button = event.target.closest("button");
-    if (!button) return;
-
-    if (button.dataset.cat !== undefined && !button.dataset.a) {
-        category = button.dataset.cat;
-        category ? q.set("cat", category) : q.delete("cat");
-        q.delete("brand");
-        visible = 12;
-        urlState();
-        catalogue(page === "favorites");
-        return;
-    }
-
-    const index = Number(button.dataset.i);
-    const action = button.dataset.a;
-
-    if (action === "detail") product(index);
-    if (action === "close") dialog.close();
-
-    if (action === "add" && valid(index)) {
-        S.parts[P[index].c] = index;
-        save();
-        toast("Добавлено в конфигуратор");
-        if (page === "builder") builder();
-    }
-
-    if (action === "fav" && valid(index)) {
-        S.fav = S.fav.includes(index)
-            ? S.fav.filter(item => item !== index)
-            : [...S.fav, index];
-
-        save();
-        refreshCards();
-    }
-
-    if (action === "cmp" && valid(index)) {
-        if (S.cmp.includes(index)) {
-            S.cmp = S.cmp.filter(item => item !== index);
-        } else {
-            if (S.cmp.length && P[S.cmp[0]].c !== P[index].c) {
-                toast("Сравнивай модели одной категории");
-                return;
-            }
-
-            if (S.cmp.length === 4) {
-                toast("В сравнении уже 4 модели");
-                return;
-            }
-
-            S.cmp.push(index);
-        }
-
-        save();
-        refreshCards();
-        toast("В сравнении: " + S.cmp.length);
-    }
-
-    if (action === "reset") {
-        q = new URLSearchParams();
-        category = "";
-        visible = 12;
-        urlState();
-        catalogue(page === "favorites");
-    }
-
-    if (action === "more") {
-        visible += 12;
-        drawProducts();
-    }
-
-    if (action === "clearcmp") {
-        S.cmp = [];
-        save();
-        compare();
-    }
-
-    if (action === "build") buildDetail(index);
-
-    if (action === "load" && B[index]) {
-        S.parts = bparts(B[index]);
-        save();
-        location.href = configURL().href;
-    }
-
-    if (action === "remove") {
-        delete S.parts[button.dataset.cat];
-        save();
-        syncConfigURL();
-        builder();
-    }
-
-    if (action === "clearparts") {
-        S.parts = {};
-        save();
-        syncConfigURL();
-        builder();
-    }
-
-    if (action === "share") {
-        const link = configURL();
-
-        show(`
-            <h2>Ссылка на конфигурацию</h2>
-            <p>
-                Адрес 127.0.0.1 работает на текущем компьютере.
-                Для другого устройства нужен доступный адрес сайта.
-            </p>
-
-            <label class="field">
-                Скопируй ссылку
-                <input
-                    id="share-link"
-                    readonly
-                    value="${esc(link.href)}"
-                >
-            </label>
-        `);
-
-        $("#share-link").select();
-    }
-
-    if (action === "export") {
-        const result = check(S.parts);
-
-        const text = [
-            "СОБРАНО — конфигурация ПК",
-            "Учебные расчётные цены; не предложения магазинов.",
-            "",
-            ...cats.map(category =>
-                C[category] + ": " + (
-                    valid(S.parts[category])
-                        ? P[S.parts[category]].name +
-                          " — " + money(P[S.parts[category]].price)
-                        : "не выбран / комплектный"
-                )
-            ),
-            "",
-            "Итого: " + money(total(S.parts)),
-            "Не включены доставка, сборка, ОС и периферия.",
-            ...result.bad,
-            "Ручная проверка: BIOS, QVL, кабели, охлаждение и геометрия."
-        ].join("\n");
-
-        const url = URL.createObjectURL(
-            new Blob([text], { type: "text/plain;charset=utf-8" })
-        );
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "sobrano-build.txt";
-        link.click();
-
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-});
-
-document.addEventListener("input", event => {
-    const id = event.target.id;
-
-    if (["search", "min", "max"].includes(id)) {
-        event.target.value
-            ? q.set(id, event.target.value)
-            : q.delete(id);
-
-        visible = 12;
-        urlState();
-        drawProducts();
-    }
-
-    if (id === "budget") drawBuilds();
-});
-
-document.addEventListener("change", event => {
-    const id = event.target.id;
-
-    if (["brand", "sort"].includes(id)) {
-        event.target.value
-            ? q.set(id, event.target.value)
-            : q.delete(id);
-
-        visible = 12;
-        urlState();
-        drawProducts();
-    }
-
-    if (id === "task") drawBuilds();
-
-    if (id === "diff") {
-        document.querySelectorAll(".compare .same").forEach(row => {
-            row.hidden = event.target.checked;
-        });
-    }
-
-    if (event.target.dataset.slot) {
-        const category = event.target.dataset.slot;
-
-        if (event.target.value === "") {
-            delete S.parts[category];
-        } else {
-            const index = Number(event.target.value);
-
-            if (valid(index) && P[index].c === category) {
-                S.parts[category] = index;
-            }
-        }
-
-        save();
-        syncConfigURL();
-        builder();
-    }
-});
-
-// Переключатель светлой и тёмной темы.
-(function initializeSobranoTheme() {
-    const root = document.documentElement;
-    const bar = document.querySelector("header .bar");
-
-    if (!bar || document.getElementById("theme-toggle")) return;
-
-    const key = "sobrano:theme:v1";
-    let saved = null;
-
-    try {
-        saved = localStorage.getItem(key);
-    } catch {}
-
-    const systemDark =
-        window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.id = "theme-toggle";
-    button.className = "theme-toggle";
-
-    function apply(theme) {
-        const dark = theme === "dark";
-        root.dataset.theme = dark ? "dark" : "light";
-
-        button.innerHTML = `
-            <span class="theme-symbol" aria-hidden="true">
-                ${dark ? "☀" : "☾"}
-            </span>
-            <span>${dark ? "Светлая тема" : "Тёмная тема"}</span>
-        `;
-    }
-
-    apply(
-        saved === "dark" || saved === "light"
-            ? saved
-            : systemDark ? "dark" : "light"
+    return (
+      '<div class="status-label ' +
+      result.status +
+      '">' +
+      esc(labels[result.status]) +
+      "</div>" +
+      (result.bad.length
+        ? '<ul class="bad">' +
+          result.bad.map((x) => "<li>" + esc(x) + "</li>").join("") +
+          "</ul>"
+        : "") +
+      (result.missing.length
+        ? '<p class="caption" style="margin-top:12px">Ещё нужны: ' +
+          result.missing.map((c) => names[c].toLowerCase()).join(", ") +
+          ".</p>"
+        : "") +
+      (result.unknown.length
+        ? '<ul class="muted">' +
+          result.unknown.map((x) => "<li>" + esc(x) + "</li>").join("") +
+          "</ul>"
+        : "") +
+      '<p class="caption" style="margin-top:12px">' +
+      (result.need === null
+        ? "Минимум мощности БП не рассчитан: недостаточно данных о питании."
+        : "Расчётный минимум БП: " +
+          money(result.need).replace(" ₸", " Вт") +
+          ".") +
+      "</p>"
     );
-
-    bar.append(button);
-
-    button.addEventListener("click", () => {
-        const theme =
-            root.dataset.theme === "dark" ? "light" : "dark";
-
-        apply(theme);
-
-        try {
-            localStorage.setItem(key, theme);
-        } catch {}
-    });
-
-    window.addEventListener("storage", event => {
-        if (
-            event.key === key &&
-            (event.newValue === "dark" || event.newValue === "light")
-        ) {
-            apply(event.newValue);
+  }
+  function budgetNote(cost) {
+    if (cost.snapshots && cost.estimates)
+      return "В сумме есть зафиксированные цены магазинов и расчётные оценки. Тип цены указан у каждого компонента.";
+    if (cost.snapshots)
+      return "Сумма по зафиксированным предложениям магазинов. Наличие и действующую цену уточняйте у продавца.";
+    return "Сумма по учебным расчётным ценам. Это оценка бюджета, а не предложение магазина.";
+  }
+  function includedComponent(category, parts) {
+    const cpu = P[parts.cpu];
+    if (category === "gpu" && cpu?.v[3] === "1")
+      return "Встроенная графика процессора";
+    if (category === "cooling" && cpu?.v[4] === "1")
+      return "Кулер в комплекте процессора";
+    return "Не выбран отдельный компонент";
+  }
+  function composition(parts) {
+    return (
+      '<div class="table-wrap"><table class="composition"><thead><tr><th scope="col">Компонент</th><th scope="col">Модель</th><th scope="col">Цена для расчёта</th></tr></thead><tbody>' +
+      cats
+        .map((c) => {
+          const p = P[parts[c]];
+          return (
+            '<tr><th scope="row">' +
+            esc(names[c]) +
+            "</th><td>" +
+            (p
+              ? '<a href="' + itemURL(p) + '">' + esc(p.name) + "</a>"
+              : esc(includedComponent(c, parts))) +
+            "</td><td>" +
+            (p
+              ? priceHTML(p)
+              : '<span class="caption">' +
+                (includedComponent(c, parts).startsWith("Не выбран")
+                  ? "—"
+                  : "В составе CPU") +
+                "</span>") +
+            "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  function buildDetail() {
+    const match = /^b(\d+)$/.exec(params.get("id") || "");
+    const index = match ? Number(match[1]) : -1,
+      b = B[index];
+    if (!b) {
+      app.innerHTML =
+        heading("Сборка не найдена") +
+        empty(
+          "Такой конфигурации нет",
+          "Выберите сборку из каталога.",
+          "builds.html",
+          "Готовые сборки",
+        );
+      return;
+    }
+    const parts = Core.buildParts(b),
+      cost = budget(parts);
+    document.title = b[0] + " — СОБРАНО";
+    app.innerHTML =
+      heading(buildTitle(b), b[2], [
+        ["Готовые сборки", "builds.html"],
+        [b[0]],
+      ]) +
+      '<div class="build-detail-layout"><section aria-label="Состав конфигурации">' +
+      composition(parts) +
+      '<p class="info-note section">' +
+      esc(budgetNote(cost)) +
+      ' Доставка, ОС, периферия и работа сборщика не включены.</p></section><aside class="build-overview">' +
+      (P[parts.case] ? Media.render(P[parts.case]) : "") +
+      '<div><div class="caption">Оценка бюджета</div><div class="price">' +
+      money(cost.value) +
+      '</div><p class="caption">Фото относится к указанному корпусу. Остальные детали могут отличаться по внешнему виду.</p></div><div class="stack"><button class="btn" data-action="load-build" data-index="' +
+      index +
+      '">Изменить в конфигураторе</button><a class="btn secondary" href="builds.html">Другие сборки</a></div></aside></div><section class="section panel"><h2>Проверка состава</h2>' +
+      statusHTML(Core.check(parts)) +
+      '<p class="caption">Перед покупкой проверьте поддержку CPU в BIOS, QVL памяти, разъёмы питания, крепления и расположение деталей.</p></section>';
+  }
+  function offersHTML(p) {
+    const offers = Prices.offersFor(p).sort((a, b) => a.price - b.price);
+    if (!offers.length)
+      return '<p class="info-note">Для этой модели пока нет проверяемого снимка предложения магазина. Показана учебная расчётная цена. Данные о продаже и наличии не добавлены.</p>';
+    const availability = {
+      "in-stock": "Был в наличии на снимке",
+      "out-of-stock": "Не было в наличии",
+      unknown: "Наличие не подтверждено",
+    };
+    return (
+      '<p class="caption">Цены зафиксированы со страниц магазинов, в том числе из доступных поисковых снимков. Они не обновляются автоматически. Проверьте действующую цену, город и комплектацию перед покупкой.</p><div class="table-wrap"><table class="offer-table"><thead><tr><th scope="col">Магазин</th><th scope="col">Цена на снимке</th><th scope="col">Дата фиксации</th><th scope="col">Условия и источник</th></tr></thead><tbody>' +
+      offers
+        .map(
+          (o) =>
+            '<tr><th scope="row">' +
+            esc(o.store) +
+            '</th><td><span class="price">' +
+            money(o.price) +
+            "</span></td><td>" +
+            date(o.checkedAt) +
+            (Date.now() - Date.parse(o.checkedAt) > 30 * 86400000
+              ? '<br><span class="badge">Архивный снимок</span>'
+              : "") +
+            '</td><td><div class="offer-note"><p>' +
+            esc(availability[o.availability] || availability.unknown) +
+            "</p>" +
+            (o.note ? "<p>" + esc(o.note) + "</p>" : "") +
+            '<a href="' +
+            esc(o.url) +
+            '" target="_blank" rel="noopener noreferrer">Страница товара ↗</a></div></td></tr>',
+        )
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  function productDetail() {
+    const match = /^p(\d+)$/.exec(params.get("id") || "");
+    const p = match ? P[Number(match[1])] : null;
+    if (!p) {
+      app.innerHTML =
+        heading("Модель не найдена") +
+        empty("Такой модели нет", "Откройте каталог и выберите комплектующее.");
+      return;
+    }
+    document.title = p.name + " — характеристики и цены — СОБРАНО";
+    document.querySelector('meta[name="description"]').content =
+      p.name +
+      ": " +
+      Core.brief(p).join(". ") +
+      ". Характеристики и оценка бюджета.";
+    app.innerHTML =
+      crumb([
+        ["Каталог", "catalog.html"],
+        [names[p.c], Catalog.categoryURL(p.c)],
+        [p.name],
+      ]) +
+      `<div class="product-detail">${Media.render(p, { large: true })}<section><span class="eyebrow">${esc(names[p.c])}</span><h1>${esc(p.name)}</h1><ul class="brief-list">${Core.brief(
+        p,
+      )
+        .map((x) => "<li>" + esc(x) + "</li>")
+        .join(
+          "",
+        )}</ul><div class="detail-price">${priceHTML(p)}<div class="row"><button class="btn" data-action="add" data-index="${p.i}">Добавить в сборку</button><button class="btn secondary" data-action="favorite" data-index="${p.i}" aria-pressed="${S.fav.includes(p.i)}">В избранное</button><button class="btn secondary" data-action="compare" data-index="${p.i}" aria-pressed="${S.cmp.includes(p.i)}">Сравнить</button></div></div><p class="detail-meta">Модель в каталоге: ${p.id}. <a href="builder.html">Открыть текущую сборку →</a></p></section></div>
+      <section class="section" id="offers"><h2>Цены магазинов</h2>${offersHTML(p)}</section>
+      <section class="section product-extra"><h2>Характеристики</h2><div class="table-wrap"><table class="spec-table"><tbody>${Core.fields[p.c].map((label, k) => '<tr><th scope="row">' + esc(label) + "</th><td>" + esc(Core.spec(p, k)) + "</td></tr>").join("")}</tbody></table></div><p class="caption section">Указаны основные характеристики. Пустые значения означают отсутствие подтверждённых данных. OEM/BOX, версия платы и региональная комплектация требуют проверки по артикулу.</p><a href="about.html#data">О характеристиках и ограничениях каталога</a></section>`;
+  }
+  function slotInfo(c) {
+    const p = P[S.parts[c]];
+    return p
+      ? '<a href="' +
+          itemURL(p) +
+          '">Характеристики модели →</a> ' +
+          esc(Core.brief(p).slice(0, 2).join(" · ")) +
+          "<br>" +
+          money(Prices.price(p).value) +
+          " · " +
+          esc(priceLabel(Prices.price(p)))
+      : c === "gpu"
+        ? "Можно оставить пустым, если у выбранного CPU есть встроенная графика."
+        : c === "cooling"
+          ? "Можно оставить пустым, если кулер входит в комплект выбранного CPU."
+          : "Выберите модель из списка.";
+  }
+  function builder() {
+    app.innerHTML =
+      heading(
+        "Конфигуратор ПК",
+        "Выберите комплектующие. Состав сохраняется в браузере, а ссылкой можно поделиться.",
+      ) +
+      (incomingError
+        ? '<p class="warn">Ссылка содержит некорректный состав. Ваша сохранённая сборка оставлена без изменений.</p>'
+        : "") +
+      `<div class="builder-toolbar row"><a class="btn secondary small" href="builds.html">Начать с готовой сборки</a><span class="caption">Выбрано компонентов: <span id="selected-count">${Object.keys(S.parts).length}</span> из 8</span></div><div class="builder-layout"><div><div class="builder-list">${cats
+        .map(
+          (c) =>
+            '<section class="builder-slot"><div class="slot-label"><label for="slot-' +
+            c +
+            '">' +
+            esc(names[c]) +
+            '</label><a href="' +
+            Catalog.categoryURL(c) +
+            '">Посмотреть в каталоге</a></div><div class="slot-controls"><select id="slot-' +
+            c +
+            '" data-slot="' +
+            c +
+            '"><option value="">Не выбран' +
+            (c === "motherboard" || c === "ram"
+              ? "а"
+              : c === "cooling"
+                ? "о"
+                : "") +
+            "</option>" +
+            P.filter((p) => p.c === c)
+              .map(
+                (p) =>
+                  '<option value="' +
+                  p.i +
+                  '"' +
+                  (S.parts[c] === p.i ? " selected" : "") +
+                  ">" +
+                  esc(p.name) +
+                  " — " +
+                  money(Prices.price(p).value) +
+                  "</option>",
+              )
+              .join("") +
+            '</select><button type="button" class="slot-remove" data-action="remove-part" data-category="' +
+            c +
+            '" aria-label="Убрать: ' +
+            esc(names[c]) +
+            '"' +
+            (S.parts[c] === undefined ? " disabled" : "") +
+            '>×</button></div><p class="slot-info" id="info-' +
+            c +
+            '">' +
+            slotInfo(c) +
+            "</p></section>",
+        )
+        .join(
+          "",
+        )}</div><div class="builder-actions"><button type="button" class="btn secondary" data-action="export">Скачать состав TXT</button><button type="button" class="btn secondary danger" data-action="clear-parts">Очистить состав</button></div></div><aside class="summary" aria-label="Бюджет и проверка сборки" id="builder-summary"></aside></div>`;
+    updateSummary();
+  }
+  function updateSummary() {
+    const node = $("#builder-summary");
+    if (!node) return;
+    const cost = budget(S.parts),
+      result = Core.check(S.parts);
+    node.innerHTML =
+      '<h2>Оценка бюджета</h2><div class="price">' +
+      money(cost.value) +
+      '</div><p class="caption">' +
+      esc(budgetNote(cost)) +
+      "</p><h3>Проверка компонентов</h3>" +
+      statusHTML(result) +
+      '<p class="caption section">Проверка ограничена известными параметрами. BIOS, QVL, разъёмы и крепления проверьте отдельно.</p><div class="stack"><button type="button" class="btn" data-action="share">Ссылка на сборку</button></div>';
+    if ($("#selected-count"))
+      $("#selected-count").textContent = Object.keys(S.parts).length;
+  }
+  function updateSlot(c) {
+    const select = $("#slot-" + c);
+    if (select) select.value = S.parts[c] ?? "";
+    const info = $("#info-" + c);
+    if (info) info.innerHTML = slotInfo(c);
+    const remove = document.querySelector(
+      '[data-action="remove-part"][data-category="' + c + '"]',
+    );
+    if (remove) remove.disabled = S.parts[c] === undefined;
+    updateSummary();
+  }
+  function compare() {
+    const rows = S.cmp.map((i) => P[i]);
+    app.innerHTML =
+      heading(
+        "Сравнение комплектующих",
+        "До четырёх моделей одной категории. Отличающиеся значения выделены.",
+      ) +
+      (!rows.length
+        ? empty(
+            "В сравнении пока нет моделей",
+            "Добавьте компоненты кнопкой «Сравнить» или ⇄ в каталоге.",
+          )
+        : '<div class="compare-toolbar"><label><input id="only-differences" type="checkbox">Только отличия</label><button class="btn secondary small" data-action="clear-compare">Очистить сравнение</button></div><div class="table-wrap"><table class="compare-table"><thead><tr><th scope="col">Характеристика</th>' +
+          rows
+            .map(
+              (p) =>
+                '<th scope="col"><a href="' +
+                itemURL(p) +
+                '">' +
+                esc(p.name) +
+                "</a>" +
+                priceHTML(p) +
+                '<button class="btn secondary small" data-action="compare" data-index="' +
+                p.i +
+                '">Убрать</button></th>',
+            )
+            .join("") +
+          "</tr></thead><tbody>" +
+          Core.fields[rows[0].c]
+            .map((label, k) => {
+              const different =
+                new Set(rows.map((p) => Core.spec(p, k))).size > 1;
+              return (
+                '<tr class="' +
+                (different ? "diff" : "same") +
+                '"><th scope="row">' +
+                esc(label) +
+                "</th>" +
+                rows
+                  .map((p) => "<td>" + esc(Core.spec(p, k)) + "</td>")
+                  .join("") +
+                "</tr>"
+              );
+            })
+            .join("") +
+          "</tbody></table></div>");
+  }
+  function about() {
+    const offers = Prices.offers;
+    app.innerHTML =
+      heading(
+        "О проекте и данных",
+        "СОБРАНО — независимый информационный каталог. Проект не продаёт товары и не принимает оплату.",
+      ) +
+      `<article class="prose"><div class="data-numbers">${P.length} моделей · ${B.length} готовые конфигурации · 8 категорий</div>
+      <h2 id="prices">Как указаны цены</h2><p>В каталоге используются два вида цен. <strong>Зафиксированная цена</strong> — сумма из доступного снимка страницы конкретного магазина. Рядом указана дата фиксации, а в карточке модели есть источник и условия. Поисковый снимок страницы может отставать от магазина; наличие, город и действующую цену нужно уточнить у продавца.</p><p><strong>Расчётная цена</strong> — учебная оценка, записанная в наборе данных. Она не является предложением магазина. Новые магазинные цены не загружаются автоматически. Снимки старше 30 дней остаются в истории товара, но перестают участвовать в расчёте бюджета.</p><p>Оценка сборки — сумма цен её компонентов: снимков не старше 30 дней и расчётных оценок для остальных деталей. Цена без подтверждённого наличия остаётся снимком, а не обещанием продажи. В сумму не входят доставка, периферия, операционная система и услуги сборщика.</p>
+      <h2>Зафиксированные предложения</h2><p>Сейчас сохранено ${offers.length} предложений для ${new Set(offers.map((o) => o.productId)).size} моделей. СОБРАНО не заявляет о партнёрстве с указанными магазинами.</p><ul>${offers.map((o) => '<li><a href="' + esc(o.url) + '" target="_blank" rel="noopener noreferrer">' + esc(o.store) + " — " + esc(P[Number(o.productId.slice(1))]?.name) + "</a>: " + money(o.price) + ", фиксация " + date(o.checkedAt) + ".</li>").join("")}</ul>
+      <h2 id="data">Характеристики и совместимость</h2><p>Названия моделей реальны. Характеристики сокращены до основных параметров, часть значений пока не заполнена. Отсутствующее значение обозначается «Не указано». Для покупки проверяйте точный артикул и документацию производителя: разные исполнения одной модели могут отличаться.</p><p>Конфигуратор проверяет сокеты, тип и объём памяти, число модулей, основные размеры и оценку мощности. Если для проверки нет данных, он сообщает об этом. Проверка не заменяет сверку BIOS, QVL, разъёмов питания, креплений и геометрии.</p>
+      <h2>Сохранение и ссылки</h2><p>Избранное, сравнение и текущая сборка сохраняются в вашем браузере. При очистке данных браузера они удалятся. Ссылку на сборку можно открыть на другом устройстве; TXT-файл позволяет сохранить состав отдельно.</p>
+      <h2 id="photos">Фотографии и авторство</h2><p>Фотографии привязаны к указанной модели. Для референсной видеокарты есть отдельная пометка о версии. Если подходящий снимок отсутствует, показан значок категории с подписью «Фото не добавлено». Фото корпуса в сборке относится только к этому корпусу.</p><ul class="credit-list">${Media.credits()
+        .map(
+          (x) =>
+            '<li><a href="' +
+            esc(x.source) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            esc(x.title || x.model) +
+            "</a> — " +
+            esc(x.author) +
+            ', <a href="' +
+            esc(x.licenseURL) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            esc(x.license) +
+            "</a>. Показ с уменьшением, без изменения содержания.</li>",
+        )
+        .join(
+          "",
+        )}</ul><p>Шрифт Manrope используется по лицензии SIL Open Font License 1.1 и загружается из файлов проекта.</p></article>`;
+  }
+  function updateActions() {
+    document
+      .querySelectorAll('[data-action="favorite"], [data-action="compare"]')
+      .forEach((button) => {
+        const index = Number(button.dataset.index),
+          key = button.dataset.action === "favorite" ? "fav" : "cmp";
+        button.setAttribute("aria-pressed", String(S[key].includes(index)));
+        if (button.classList.contains("icon-button"))
+          button.textContent =
+            key === "fav"
+              ? S.fav.includes(index)
+                ? "♥"
+                : "♡"
+              : S.cmp.includes(index)
+                ? "✓"
+                : "⇄";
+      });
+  }
+  function showDialog(html) {
+    $("#dialog-content").innerHTML =
+      '<button class="btn secondary small dialog-close" type="button" data-action="close-dialog">Закрыть ×</button>' +
+      html;
+    $("#details").showModal();
+  }
+  function exportBuild() {
+    const cost = budget(S.parts),
+      check = Core.check(S.parts);
+    const text = [
+      "СОБРАНО — состав компьютера",
+      "",
+      ...cats.map((c) => {
+        const p = P[S.parts[c]];
+        return (
+          names[c] +
+          ": " +
+          (p
+            ? p.name +
+              " — " +
+              money(Prices.price(p).value) +
+              " (" +
+              priceLabel(Prices.price(p)) +
+              ")"
+            : includedComponent(c, S.parts))
+        );
+      }),
+      "",
+      "Оценка бюджета: " + money(cost.value),
+      budgetNote(cost),
+      "",
+      ...check.bad,
+      ...check.unknown,
+      check.missing.length
+        ? "Ещё нужны: " + check.missing.map((c) => names[c]).join(", ")
+        : "",
+      "BIOS, QVL, разъёмы и крепления требуют ручной проверки.",
+      "",
+      configURL().href,
+    ]
+      .filter((x) => x !== "")
+      .join("\r\n");
+    const url = URL.createObjectURL(
+      new Blob(["\ufeff" + text], { type: "text/plain;charset=utf-8" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sobrano-build.txt";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    const action = button.dataset.action,
+      index = Number(button.dataset.index),
+      p = P[index];
+    if (action === "favorite" && p) {
+      S.fav = S.fav.includes(index)
+        ? S.fav.filter((i) => i !== index)
+        : [...S.fav, index];
+      persist();
+      updateActions();
+      if (page === "favorites") {
+        drawProducts();
+        $("#app").focus({ preventScroll: true });
+      }
+    }
+    if (action === "compare" && p) {
+      if (S.cmp.includes(index)) S.cmp = S.cmp.filter((i) => i !== index);
+      else if (S.cmp.length >= 4) {
+        toast(
+          "В сравнении уже четыре модели. Уберите одну, чтобы добавить другую.",
+        );
+        return;
+      } else if (S.cmp.length && P[S.cmp[0]].c !== p.c) {
+        toast("Сравнивать можно модели одной категории.");
+        return;
+      } else S.cmp.push(index);
+      persist();
+      updateActions();
+      if (page === "compare") compare();
+    }
+    if (action === "add" && p) {
+      S.parts[p.c] = index;
+      persist();
+      toast(p.name + " добавлен в текущую сборку.");
+    }
+    if (action === "view") {
+      params.set("view", button.dataset.view === "grid" ? "grid" : "list");
+      history.replaceState(null, "", location.pathname + "?" + params);
+      drawProducts();
+    }
+    if (action === "more") {
+      visible += 12;
+      drawProducts();
+    }
+    if (action === "load-build" && B[index]) {
+      S.parts = Core.buildParts(B[index]);
+      persist();
+      location.href = configURL().href;
+    }
+    if (action === "remove-part") {
+      delete S.parts[button.dataset.category];
+      persist();
+      syncBuilderURL();
+      updateSlot(button.dataset.category);
+      $("#slot-" + button.dataset.category)?.focus();
+    }
+    if (action === "clear-parts") {
+      S.parts = {};
+      persist();
+      syncBuilderURL();
+      cats.forEach(updateSlot);
+      toast("Состав очищен.");
+    }
+    if (action === "clear-compare") {
+      S.cmp = [];
+      persist();
+      compare();
+    }
+    if (action === "export") exportBuild();
+    if (action === "share") {
+      showDialog(
+        '<h2 id="dialog-title">Ссылка на сборку</h2><p class="caption">Скопируйте ссылку, чтобы открыть этот состав на другом устройстве.</p><label for="share-link">Ссылка на конфигурацию</label><input id="share-link" readonly value="' +
+          esc(configURL().href) +
+          '"><button class="btn" data-action="copy-link">Скопировать ссылку</button>',
+      );
+      $("#share-link").select();
+    }
+    if (action === "copy-link") {
+      const field = $("#share-link");
+      field.select();
+      if (navigator.clipboard?.writeText)
+        navigator.clipboard
+          .writeText(field.value)
+          .then(() => toast("Ссылка скопирована."))
+          .catch(() =>
+            toast(
+              "Выделенная ссылка готова: нажмите Ctrl+C или выберите «Копировать».",
+            ),
+          );
+      else toast("Ссылка выделена. Нажмите Ctrl+C или выберите «Копировать».");
+    }
+    if (action === "close-dialog") $("#details").close();
+  });
+  document.addEventListener("submit", (event) => {
+    if (event.target.id === "catalog-filters") {
+      event.preventDefault();
+      clearTimeout(searchTimer);
+      readFilters(true);
+    }
+    if (event.target.id === "build-filters") {
+      event.preventDefault();
+      drawBuilds();
+    }
+  });
+  document.addEventListener("input", (event) => {
+    if (
+      event.target.form?.id === "catalog-filters" &&
+      event.target.tagName === "INPUT"
+    ) {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => readFilters(), 180);
+    }
+    if (event.target.id === "budget") drawBuilds();
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.form?.id === "catalog-filters") {
+      clearTimeout(searchTimer);
+      readFilters();
+    }
+    if (event.target.id === "category-select")
+      location.href =
+        (page === "favorites" ? "favorites.html" : "catalog.html") +
+        (event.target.value ? "?cat=" + event.target.value : "");
+    if (event.target.id === "task") drawBuilds();
+    if (event.target.id === "only-differences")
+      document.querySelectorAll(".compare-table tr.same").forEach((tr) => {
+        tr.hidden = event.target.checked;
+      });
+    if (event.target.dataset.slot) {
+      const c = event.target.dataset.slot,
+        value = event.target.value,
+        index = Number(value);
+      if (value === "") delete S.parts[c];
+      else if (Core.valid(index) && P[index].c === c) S.parts[c] = index;
+      persist();
+      syncBuilderURL();
+      updateSlot(c);
+      // Меняется только итог и подпись: select остаётся на месте и сохраняет фокус.
+    }
+  });
+  document.addEventListener(
+    "error",
+    (event) => {
+      const image = event.target;
+      if (image.tagName !== "IMG") return;
+      const next = image.dataset.fallback;
+      if (next && image.src !== next) {
+        delete image.dataset.fallback;
+        image.src = next;
+        return;
+      }
+      const figure = image.closest(".product-media");
+      if (figure) {
+        image.replaceWith(
+          Object.assign(document.createElement("span"), {
+            textContent: "Фото недоступно",
+          }),
+        );
+        figure.classList.add("media-placeholder");
+      }
+    },
+    true,
+  );
+  const themeButton = $("#theme-toggle");
+  function applyTheme(value) {
+    document.documentElement.dataset.theme = value;
+    themeButton.textContent = value === "dark" ? "Светлая тема" : "Тёмная тема";
+    document.querySelector('meta[name="theme-color"]').content =
+      value === "dark" ? "#1d2027" : "#ffffff";
+  }
+  let theme;
+  try {
+    theme = localStorage.getItem("sobrano:theme:v1");
+  } catch {}
+  applyTheme(
+    theme === "dark" || theme === "light"
+      ? theme
+      : matchMedia("(prefers-color-scheme:dark)").matches
+        ? "dark"
+        : "light",
+  );
+  themeButton.addEventListener("click", () => {
+    const next =
+      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try {
+      localStorage.setItem("sobrano:theme:v1", next);
+    } catch {}
+  });
+  $("#menu-toggle").addEventListener("click", () => {
+    const open = $("#menu-toggle").getAttribute("aria-expanded") !== "true";
+    $("#menu-toggle").setAttribute("aria-expanded", String(open));
+    $("#primary-nav").classList.toggle("open", open);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      $("#primary-nav").classList.contains("open")
+    ) {
+      $("#primary-nav").classList.remove("open");
+      $("#menu-toggle").setAttribute("aria-expanded", "false");
+      $("#menu-toggle").focus();
+    }
+  });
+  matchMedia("(min-width:901px)").addEventListener("change", (event) => {
+    if ($("#filters-panel")) $("#filters-panel").open = event.matches;
+  });
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === "sobrano:theme:v1" &&
+      ["light", "dark"].includes(event.newValue)
+    )
+      applyTheme(event.newValue);
+    if (event.key === KEY) {
+      try {
+        S = sanitize(JSON.parse(event.newValue || "{}"));
+        counters();
+        updateActions();
+        if (page === "builder") {
+          cats.forEach(updateSlot);
+          syncBuilderURL();
         }
-    });
+        if (page === "favorites") drawProducts();
+        if (page === "compare") compare();
+      } catch {}
+    }
+  });
+  const renderers = {
+    index: home,
+    catalog: () => catalogue(),
+    favorites: () => catalogue(true),
+    builds,
+    builder,
+    compare,
+    about,
+    product: productDetail,
+    build: buildDetail,
+  };
+  (renderers[page] || home)();
+  counters();
+  $("#storage-note").hidden = storageOK;
+  $("#global-search").value = params.get("search") || "";
+  const active =
+    page === "product" ? "catalog" : page === "build" ? "builds" : page;
+  document.querySelectorAll(".primary-nav a").forEach((a) => {
+    if (a.getAttribute("href") === active + ".html")
+      a.setAttribute("aria-current", "page");
+  });
+  // Публичные данные интерфейса для проверок; состояние пользователя меняется только обработчиками выше.
+  window.SobranoApp = {
+    products: P,
+    builds: B,
+    configURL,
+    price: Prices.price,
+    budget,
+  };
 })();
-
-const titles = {
-    index: "Главная",
-    catalog: "Каталог комплектующих",
-    builds: "Готовые сборки ПК",
-    builder: "Конфигуратор ПК",
-    favorites: "Избранное",
-    compare: "Сравнение",
-    about: "О проекте"
-};
-
-document.title = (titles[page] || "Главная") + " — СОБРАНО";
-render();
