@@ -1,99 +1,121 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
-        name="description"
-        content="СОБРАНО — комплектующие, сравнение и готовые сборки ПК с учебными ценами в тенге."
-    >
-
-    <title>СОБРАНО — комплектующие и сборки ПК</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <link rel="stylesheet" href="css/style.css">
-
+      name="description"
+      content="Готовые конфигурации для учёбы, работы и игр: состав, проверка основных ограничений и оценка бюджета."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Готовые сборки ПК — СОБРАНО</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
     <script src="js/data.js" defer></script>
+    <script src="js/core.js" defer></script>
+    <script src="js/media.js" defer></script>
+    <script src="js/offers.js" defer></script>
+    <script src="js/pricing.js" defer></script>
+    <script src="js/catalog-ui.js" defer></script>
     <script src="js/app.js" defer></script>
-</head>
-
-<body>
-    <a class="sr-only" href="#app">Перейти к содержимому</a>
-
-    <div class="notice">
-        Учебный проект · цены — расчётные оценки в ₸
-    </div>
-
-    <header>
-        <div class="wrap bar">
-            <a class="logo" href="index.html">
-                СОБРАНО<span>.</span>
-            </a>
-
-            <nav aria-label="Основная навигация">
-                <a href="index.html">Главная</a>
-                <a href="catalog.html">Каталог</a>
-                <a href="builds.html">Готовые сборки</a>
-                <a href="builder.html">Конфигуратор</a>
-
-                <a href="favorites.html">
-                    Избранное <span data-count="fav">0</span>
-                </a>
-
-                <a href="compare.html">
-                    Сравнение <span data-count="cmp">0</span>
-                </a>
-
-                <a href="about.html">О проекте</a>
-            </nav>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Перейти к содержимому</a>
+    <header class="site-header">
+      <div class="wrap header-main">
+        <a class="logo" href="index.html" aria-label="СОБРАНО — главная"
+          >СОБРАНО<span>.</span></a
+        >
+        <form class="global-search" action="catalog.html" role="search">
+          <label class="sr-only" for="global-search">Поиск комплектующих</label>
+          <input
+            id="global-search"
+            name="search"
+            type="search"
+            placeholder="Найти комплектующие"
+            autocomplete="off"
+          />
+          <button type="submit" aria-label="Найти в каталоге">Найти</button>
+        </form>
+        <div class="header-actions">
+          <a href="favorites.html" class="utility-link"
+            >Избранное <span data-count="fav">0</span></a
+          >
+          <a href="compare.html" class="utility-link"
+            >Сравнение <span data-count="cmp">0</span></a
+          >
+          <button id="theme-toggle" class="theme-toggle" type="button">
+            Тёмная тема
+          </button>
+          <button
+            id="menu-toggle"
+            class="menu-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="primary-nav"
+          >
+            Меню
+          </button>
         </div>
+      </div>
+      <div class="navigation-border">
+        <div class="wrap navigation-row">
+          <nav
+            id="primary-nav"
+            class="primary-nav"
+            aria-label="Основная навигация"
+          >
+            <a href="catalog.html">Каталог</a>
+            <a href="builds.html">Готовые сборки</a>
+            <a href="builder.html">Конфигуратор</a>
+            <a href="about.html" class="mobile-about">О проекте</a>
+          </nav>
+          <span class="region-note">Казахстан · цены в ₸</span>
+        </div>
+      </div>
     </header>
-
-    <p id="storage-note" class="wrap warn" hidden>
-        Браузер запретил сохранение.
-        Выбор доступен до закрытия страницы.
-        Состав сборки можно передать ссылкой.
-    </p>
-
-    <main id="app" class="wrap" tabindex="-1">
-        <h1>Загрузка СОБРАНО…</h1>
-        <p>
-            Если интерфейс не появился, проверь файлы
-            js/data.js и js/app.js, затем обнови страницу Ctrl+F5.
-        </p>
+    <div class="wrap storage-warning" id="storage-note" hidden role="status">
+      Браузер запретил сохранение. Состав можно передать ссылкой или скачать в
+      TXT.
+    </div>
+    <main class="wrap" id="app" tabindex="-1">
+      <h1>Готовые сборки ПК</h1>
+      <p>Загружаем каталог…</p>
+      <noscript
+        ><p>
+          Для подбора и сравнения компонентов включите JavaScript в браузере.
+        </p></noscript
+      >
     </main>
-
-    <noscript>
-        <p class="wrap warn">
-            Для каталога, сравнения и конфигуратора
-            включи JavaScript в браузере.
-        </p>
-    </noscript>
-
-    <footer>
-        <div class="wrap row space">
-            <div>
-                <strong>СОБРАНО.</strong>
-                Независимый учебный информационный проект.
-                <br>
-                Фотографии — примеры категорий.
-                <a class="link" href="about.html">Данные и авторство</a>
-            </div>
-
-            <span>Комплектующие и сборки ПК · Казахстан</span>
+    <footer class="site-footer">
+      <div class="wrap footer-grid">
+        <div>
+          <a class="logo footer-logo" href="index.html"
+            >СОБРАНО<span>.</span></a
+          >
+          <p>Независимый информационный проект о комплектующих и сборках ПК.</p>
         </div>
+        <div>
+          <strong>Каталог и подбор</strong
+          ><a href="catalog.html">Комплектующие</a
+          ><a href="builds.html">Готовые сборки</a
+          ><a href="builder.html">Конфигуратор</a>
+        </div>
+        <div>
+          <strong>О данных</strong
+          ><a href="about.html#prices">Как указаны цены</a
+          ><a href="about.html#photos">Фото и источники</a
+          ><a href="about.html">О проекте</a>
+        </div>
+      </div>
+      <div class="wrap footer-note">
+        Зафиксированные цены магазинов имеют дату проверки. Остальные цены —
+        расчётные оценки для учебного проекта. СОБРАНО не продаёт товары.
+      </div>
     </footer>
-
-    <dialog id="details" aria-label="Подробная информация"></dialog>
-
-    <div id="toast" role="status" aria-live="polite"></div>
-</body>
+    <dialog id="details" aria-labelledby="dialog-title">
+      <div id="dialog-content"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
 </html>

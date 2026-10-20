@@ -1,23 +1,23 @@
 // СОБРАНО — учебный набор данных.
 // Цены — расчётные оценки в тенге.
-// Фотографии — примеры категорий.
+// Исходные фотографии категорий используются media.js только при совпадении модели.
 
 (() => {
-    "use strict";
+  "use strict";
 
-    // CPU: сокет, RAM, мощность, встроенная графика (1/0),
-    // комплектный кулер (1/0), ядра, потоки, максимум мощности (1/0).
-    // Последний признак 0 означает TDP.
-    //
-    // GPU: потребление Вт, рекомендация БП Вт, длина мм, VRAM ГБ.
-    // Плата: сокет, RAM, форм-фактор, слоты RAM, максимум RAM ГБ.
-    // RAM: тип, объём ГБ, количество модулей, скорость MT/s.
-    // Накопитель: интерфейс, объём ГБ, размер M.2, чтение МБ/с.
-    // БП: мощность Вт, формат, длина мм.
-    // Корпус: форматы плат, максимум GPU/кулера/БП в мм.
-    // Кулер: сокеты, высота мм.
+  // CPU: сокет, RAM, мощность, встроенная графика (1/0),
+  // комплектный кулер (1/0), ядра, потоки, максимум мощности (1/0).
+  // Последний признак 0 означает TDP.
+  //
+  // GPU: потребление Вт, рекомендация БП Вт, длина мм, VRAM ГБ.
+  // Плата: сокет, RAM, форм-фактор, слоты RAM, максимум RAM ГБ.
+  // RAM: тип, объём ГБ, количество модулей, скорость MT/s.
+  // Накопитель: интерфейс, объём ГБ, размер M.2, чтение МБ/с.
+  // БП: мощность Вт, формат, длина мм.
+  // Корпус: форматы плат, максимум GPU/кулера/БП в мм.
+  // Кулер: сокеты, высота мм.
 
-    const productRows = `cpu|AMD Ryzen 5 5600|55000|AM4,DDR4,65,0,0,6,12,0
+  const productRows = `cpu|AMD Ryzen 5 5600|55000|AM4,DDR4,65,0,0,6,12,0
 cpu|AMD Ryzen 5 5600G|65000|AM4,DDR4,65,1,1,6,12,0
 cpu|AMD Ryzen 5 7600|105000|AM5,DDR5,65,1,1,6,12,0
 cpu|AMD Ryzen 5 7600X|115000|AM5,DDR5,105,1,0,6,12,0
@@ -208,11 +208,11 @@ cooling|Noctua NH-U12S redux|43000|AM4:AM5:LGA1700,158
 cooling|Noctua NH-D15|70000|AM4:AM5:LGA1700,165
 cooling|ARCTIC Freezer 36|25000|AM4:AM5:LGA1700,159`;
 
-    // Сборка: название | задача | описание | номера товаров.
-    // Порядок номеров:
-    // CPU, GPU, плата, RAM, накопитель, БП, корпус, кулер.
+  // Сборка: название | задача | описание | номера товаров.
+  // Порядок номеров:
+  // CPU, GPU, плата, RAM, накопитель, БП, корпус, кулер.
 
-    const buildRows = `Учёба и офис|Учёба и офис|Встроенная графика и комплектный кулер сокращают число обязательных деталей.|1,,13,24,29,40,48,
+  const buildRows = `Учёба и офис|Учёба и офис|Встроенная графика и комплектный кулер сокращают число обязательных деталей.|1,,13,24,29,40,48,
 Для разработчика|Работа|8 ядер и 32 ГБ памяти — основа для параллельной работы.|4,,14,28,34,41,44,47
 Домашний универсал|Дом и медиа|AM5, встроенная графика, 32 ГБ RAM и SSD 1 ТБ под приложения и файлы.|2,,14,26,30,49,48,
 Игры в Full HD|Игры|Дискретная RTX 4060 и 6-ядерный CPU.|0,16,13,25,30,40,48,46
@@ -235,7 +235,7 @@ Radeon RX 9070 XT|Игры|Семейство RX 9070 XT с 16 ГБ VRAM.|8,109,
 NVIDIA RTX 5070|Игры|RTX 5070 и Ryzen 9600X.|7,90,120,28,31,171,179,184
 3D: 24 ГБ видеопамяти|Работа|RTX 4090 и Ryzen 7900 с 64 ГБ RAM.|6,85,121,138,158,173,180,188`;
 
-    const photoRows = `cpu|AMD Ryzen 5 7600|3/3d/AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg|Rainer Knäpper (Smial)|art
+  const photoRows = `cpu|AMD Ryzen 5 7600|3/3d/AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg|Rainer Knäpper (Smial)|art
 gpu|ZOTAC GeForce RTX 3060 12 GB LHR|b/b1/Zotac_GeForce_RTX_3060_12GB_VRAM_LHR_video_card.jpg|Qurren|4s
 motherboard|MSI B550 Tomahawk|9/9b/MSI_B550_Tomahawk_19354.jpg|Michael Wolf, Penig|3s
 ram|HyperX Fury DDR4 HX432C16FB4AK2/32|c/c0/HyperX_Fury_DDR4-RAM_20210611_Vorderseite.png|PantheraLeo1359531|4b
@@ -245,65 +245,55 @@ case|Корпус Kolink Observatory RGB Midi-Tower|5/5b/PC-Geh%C3%A4use_Kolink_
 cooling|DeepCool AK400|7/7c/DeepCool_AK400_1.jpg|Qurren|4s
 build|Игровой компьютер в корпусе Corsair iCUE 5000X|b/bd/2025_Wn%C4%99trze_komputera_PC.jpg|Jacek Halicki|4s`;
 
-    const licenses = {
-        art: [
-            "Free Art License",
-            "https://artlibre.org/licence/lal/en/"
-        ],
-        "3s": [
-            "CC BY-SA 3.0",
-            "https://creativecommons.org/licenses/by-sa/3.0/"
-        ],
-        "4s": [
-            "CC BY-SA 4.0",
-            "https://creativecommons.org/licenses/by-sa/4.0/"
-        ],
-        "4b": [
-            "CC BY 4.0",
-            "https://creativecommons.org/licenses/by/4.0/"
-        ]
+  const licenses = {
+    art: ["Free Art License", "https://artlibre.org/licence/lal/en/"],
+    "3s": ["CC BY-SA 3.0", "https://creativecommons.org/licenses/by-sa/3.0/"],
+    "4s": ["CC BY-SA 4.0", "https://creativecommons.org/licenses/by-sa/4.0/"],
+    "4b": ["CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"],
+  };
+
+  const products = productRows
+    .trim()
+    .split("\n")
+    .map((line) => {
+      const [category, name, price, parameters] = line.split("|");
+      return [category, name, Number(price), parameters.split(",")];
+    });
+
+  const builds = buildRows
+    .trim()
+    .split("\n")
+    .map((line) => {
+      const [name, task, description, numbers] = line.split("|");
+
+      const components = numbers
+        .split(",")
+        .map((value) => (value === "" ? null : Number(value)));
+
+      return [name, task, description, components];
+    });
+
+  const photos = {};
+
+  for (const line of photoRows.trim().split("\n")) {
+    const [category, title, path, author, licenseKey] = line.split("|");
+    const filename = path.split("/").pop();
+    const [license, licenseURL] = licenses[licenseKey];
+
+    photos[category] = {
+      title,
+      author,
+      license,
+      licenseURL,
+      source: "https://commons.wikimedia.org/wiki/File:" + filename,
+      src:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/" +
+        path +
+        "/960px-" +
+        filename,
+      fallback: "https://upload.wikimedia.org/wikipedia/commons/" + path,
     };
+  }
 
-    const products = productRows.trim().split("\n").map(line => {
-        const [category, name, price, parameters] = line.split("|");
-        return [
-            category,
-            name,
-            Number(price),
-            parameters.split(",")
-        ];
-    });
-
-    const builds = buildRows.trim().split("\n").map(line => {
-        const [name, task, description, numbers] = line.split("|");
-
-        const components = numbers.split(",").map(value =>
-            value === "" ? null : Number(value)
-        );
-
-        return [name, task, description, components];
-    });
-
-    const photos = {};
-
-    for (const line of photoRows.trim().split("\n")) {
-        const [category, title, path, author, licenseKey] = line.split("|");
-        const filename = path.split("/").pop();
-        const [license, licenseURL] = licenses[licenseKey];
-
-        photos[category] = {
-            title,
-            author,
-            license,
-            licenseURL,
-            source: "https://commons.wikimedia.org/wiki/File:" + filename,
-            src:
-                "https://upload.wikimedia.org/wikipedia/commons/thumb/" +
-                path + "/960px-" + filename,
-            fallback:
-                "https://upload.wikimedia.org/wikipedia/commons/" + path
-        };
-    }
-
-    window.SOBRANO_DATA = { products, builds, photos };
+  window.SOBRANO_DATA = { products, builds, photos };
 })();
