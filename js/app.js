@@ -7,6 +7,7 @@
   const Catalog = window.SobranoCatalog;
   const Media = window.SobranoMedia;
   const Prices = window.SobranoPricing;
+  const Compatibility = window.SobranoCompatibility;
   const P = Core.products,
     B = Core.builds,
     cats = Core.cats,
@@ -204,9 +205,18 @@
           <button type="button" class="icon-button" data-action="favorite" data-index="${p.i}" aria-label="В избранное: ${esc(p.name)}" aria-pressed="${S.fav.includes(p.i)}">${S.fav.includes(p.i) ? "♥" : "♡"}</button>
           <button type="button" class="icon-button" data-action="compare" data-index="${p.i}" aria-label="Сравнить: ${esc(p.name)}" aria-pressed="${S.cmp.includes(p.i)}">${S.cmp.includes(p.i) ? "✓" : "⇄"}</button>
         </div>
-        <button type="button" class="btn" data-action="add" data-index="${p.i}">В сборку</button>
+        ${addControl(p)}
       </div>
     </article>`;
+  }
+  function addControl(p, label = "В сборку") {
+    const result = Compatibility.assess(p, S.parts);
+    const note = !result.allowed
+      ? result.conflicts.join(" ")
+      : result.unknown.length
+        ? "Требует проверки: " + result.unknown.join(" ")
+        : "";
+    return `<button type="button" class="btn" data-action="add" data-index="${p.i}" ${result.allowed ? "" : "disabled"}>${S.parts[p.c] === p.i ? "В текущей сборке" : esc(label)}</button>${note ? '<p class="compatibility-hint ' + (result.allowed ? "" : "conflict") + '">' + esc(note) + "</p>" : ""}`;
   }
   function currentProducts(list = P) {
     return list.map((p) => ({ ...p, displayPrice: Prices.price(p).value }));
@@ -219,7 +229,12 @@
     const category = categoryName();
     const list = favorites ? P.filter((p) => S.fav.includes(p.i)) : P;
     const action = favorites ? "favorites.html" : "catalog.html";
-    const categoryHref = (c) => action + (c ? "?cat=" + c : "");
+    const categoryHref = (c) => {
+      const next = new URLSearchParams();
+      if (c) next.set("cat", c);
+      if (params.get("compat") === "all") next.set("compat", "all");
+      return action + (next.size ? "?" + next : "");
+    };
     const title = favorites
       ? "Избранные комплектующие"
       : category
@@ -238,7 +253,7 @@
       `<div class="catalog-layout">
         <aside class="catalog-sidebar" aria-label="Категории и фильтры">
           <nav class="category-menu" aria-label="Категории комплектующих">
-            <a href="${action}" class="${!category ? "active" : ""}">Все категории <small>${list.length}</small></a>
+            <a href="${categoryHref("")}" class="${!category ? "active" : ""}">Все категории <small>${list.length}</small></a>
             ${cats.map((c) => '<a href="' + categoryHref(c) + '" class="' + (category === c ? "active" : "") + '">' + esc(names[c]) + "<small>" + list.filter((p) => p.c === c).length + "</small></a>").join("")}
           </nav>
           <label class="category-mobile" for="category-select">Категория
@@ -250,6 +265,7 @@
           </details>
         </aside>
         <section aria-label="Список комплектующих">
+          <div class="compatibility-filter"><label for="compatible-only"><input id="compatible-only" type="checkbox" ${params.get("compat") === "all" ? "" : "checked"}>Подходят к моей сборке</label><a href="builder.html">Текущая сборка: <span id="catalog-selected-count">${Object.keys(S.parts).length}</span> из 8 →</a><p id="compatibility-note" class="caption" aria-live="polite"></p></div>
           <div class="catalog-toolbar">
             <p id="found" aria-live="polite"></p>
             <div class="row">
@@ -278,7 +294,28 @@
     if (!$("#results")) return;
     const list =
       page === "favorites" ? P.filter((p) => S.fav.includes(p.i)) : P;
-    const rows = Catalog.filter(currentProducts(list), params, categoryName());
+    const filtered = Catalog.filter(
+      currentProducts(list),
+      params,
+      categoryName(),
+    );
+    const enabled = params.get("compat") !== "all";
+    const rows = enabled ? Compatibility.filter(filtered, S.parts) : filtered;
+    $("#catalog-selected-count").textContent = Object.keys(S.parts).length;
+    $("#compatible-only").checked = enabled;
+    document.querySelectorAll(".category-menu a").forEach((link) => {
+      const url = new URL(link.href);
+      if (enabled) url.searchParams.delete("compat");
+      else url.searchParams.set("compat", "all");
+      link.href = url.href;
+    });
+    $("#compatibility-note").textContent = Object.keys(S.parts).length
+      ? enabled
+        ? "Скрыто несовместимых моделей: " +
+          (filtered.length - rows.length) +
+          ". Неполные данные отмечены «Требует проверки»."
+        : "Показаны все модели. Несовместимые детали нельзя добавить к текущему составу."
+      : "Выберите первую деталь — остальные списки подстроятся под неё.";
     $("#found").textContent = "Найдено моделей: " + rows.length;
     $("#results").className =
       "catalog-results" +
@@ -306,6 +343,7 @@
     for (const [key, value] of new FormData(form))
       if (String(value).trim()) next.set(key, String(value).trim());
     if (params.get("view") === "grid") next.set("view", "grid");
+    if (params.get("compat") === "all") next.set("compat", "all");
     params = next;
     visible = 12;
     history.replaceState(
@@ -580,12 +618,25 @@
         .map((x) => "<li>" + esc(x) + "</li>")
         .join(
           "",
-        )}</ul><div class="detail-price">${priceHTML(p)}<div class="row"><button class="btn" data-action="add" data-index="${p.i}">Добавить в сборку</button><button class="btn secondary" data-action="favorite" data-index="${p.i}" aria-pressed="${S.fav.includes(p.i)}">В избранное</button><button class="btn secondary" data-action="compare" data-index="${p.i}" aria-pressed="${S.cmp.includes(p.i)}">Сравнить</button></div></div><p class="detail-meta">Модель в каталоге: ${p.id}. <a href="builder.html">Открыть текущую сборку →</a></p></section></div>
+        )}</ul><div class="detail-price">${priceHTML(p)}<div class="row">${addControl(p, "Добавить в сборку")}<button class="btn secondary" data-action="favorite" data-index="${p.i}" aria-pressed="${S.fav.includes(p.i)}">В избранное</button><button class="btn secondary" data-action="compare" data-index="${p.i}" aria-pressed="${S.cmp.includes(p.i)}">Сравнить</button></div></div><p class="detail-meta">Модель в каталоге: ${p.id}. <a href="builder.html">Открыть текущую сборку →</a></p></section></div>
       <section class="section" id="offers"><h2>Цены магазинов</h2>${offersHTML(p)}</section>
       <section class="section product-extra"><h2>Характеристики</h2><div class="table-wrap"><table class="spec-table"><tbody>${Core.fields[p.c].map((label, k) => '<tr><th scope="row">' + esc(label) + "</th><td>" + esc(Core.spec(p, k)) + "</td></tr>").join("")}</tbody></table></div><p class="caption section">Указаны основные характеристики. Пустые значения означают отсутствие подтверждённых данных. OEM/BOX, версия платы и региональная комплектация требуют проверки по артикулу.</p><a href="about.html#data">О характеристиках и ограничениях каталога</a></section>`;
   }
   function slotInfo(c) {
     const p = P[S.parts[c]];
+    const result = p ? Compatibility.assess(p, S.parts) : null;
+    const note =
+      result && (!result.allowed || result.unknown.length)
+        ? '<span class="compatibility-hint ' +
+          (!result.allowed ? "conflict" : "") +
+          '">' +
+          esc(
+            !result.allowed
+              ? result.conflicts.join(" ")
+              : "Требует проверки: " + result.unknown.join(" "),
+          ) +
+          "</span>"
+        : "";
     return p
       ? '<a href="' +
           itemURL(p) +
@@ -594,12 +645,63 @@
           "<br>" +
           money(Prices.price(p).value) +
           " · " +
-          esc(priceLabel(Prices.price(p)))
+          esc(priceLabel(Prices.price(p))) +
+          note
       : c === "gpu"
         ? "Можно оставить пустым, если у выбранного CPU есть встроенная графика."
         : c === "cooling"
           ? "Можно оставить пустым, если кулер входит в комплект выбранного CPU."
           : "Выберите модель из списка.";
+  }
+  function slotOptions(c) {
+    const ending =
+      c === "motherboard" || c === "ram" ? "а" : c === "cooling" ? "о" : "";
+    return (
+      '<option value="">Не выбран' +
+      ending +
+      "</option>" +
+      P.filter((p) => p.c === c)
+        .map((p) => {
+          const result = Compatibility.assess(p, S.parts);
+          if (!result.allowed && S.parts[c] !== p.i) return "";
+          const suffix = !result.allowed
+            ? " · Конфликт: замените деталь"
+            : result.unknown.length
+              ? " · Требует проверки"
+              : "";
+          return (
+            '<option value="' +
+            p.i +
+            '"' +
+            (S.parts[c] === p.i ? " selected" : "") +
+            ">" +
+            esc(p.name) +
+            " — " +
+            money(Prices.price(p).value) +
+            esc(suffix) +
+            "</option>"
+          );
+        })
+        .join("")
+    );
+  }
+  function refreshBuilderOptions() {
+    cats.forEach((c) => {
+      const select = $("#slot-" + c);
+      if (!select) return;
+      // Узлы select сохраняются: клавиатурный фокус остаётся на выбранном поле.
+      select.innerHTML = slotOptions(c);
+      updateSlot(c);
+      const all = P.filter((p) => p.c === c);
+      const allowed = Compatibility.filter(all, S.parts).length;
+      $("#slot-count-" + c).textContent =
+        "Доступно моделей: " +
+        allowed +
+        " из " +
+        all.length +
+        (allowed < all.length ? ". Несовместимые варианты скрыты." : ".");
+    });
+    updateSummary();
   }
   function builder() {
     app.innerHTML =
@@ -610,7 +712,7 @@
       (incomingError
         ? '<p class="warn">Ссылка содержит некорректный состав. Ваша сохранённая сборка оставлена без изменений.</p>'
         : "") +
-      `<div class="builder-toolbar row"><a class="btn secondary small" href="builds.html">Начать с готовой сборки</a><span class="caption">Выбрано компонентов: <span id="selected-count">${Object.keys(S.parts).length}</span> из 8</span></div><div class="builder-layout"><div><div class="builder-list">${cats
+      `<div class="builder-toolbar row"><a class="btn secondary small" href="builds.html">Начать с готовой сборки</a><span class="caption">Выбрано компонентов: <span id="selected-count">${Object.keys(S.parts).length}</span> из 8</span></div><p class="caption compatibility-explanation">Списки учитывают выбранные детали: заведомо несовместимые варианты скрываются. Пометка «Требует проверки» означает, что для части проверок не хватает данных. BIOS, разъёмы и крепления нужно сверить отдельно.</p><div class="builder-layout"><div><div class="builder-list">${cats
         .map(
           (c) =>
             '<section class="builder-slot"><div class="slot-label"><label for="slot-' +
@@ -623,27 +725,12 @@
             c +
             '" data-slot="' +
             c +
-            '"><option value="">Не выбран' +
-            (c === "motherboard" || c === "ram"
-              ? "а"
-              : c === "cooling"
-                ? "о"
-                : "") +
-            "</option>" +
-            P.filter((p) => p.c === c)
-              .map(
-                (p) =>
-                  '<option value="' +
-                  p.i +
-                  '"' +
-                  (S.parts[c] === p.i ? " selected" : "") +
-                  ">" +
-                  esc(p.name) +
-                  " — " +
-                  money(Prices.price(p).value) +
-                  "</option>",
-              )
-              .join("") +
+            '" aria-describedby="info-' +
+            c +
+            " slot-count-" +
+            c +
+            '">' +
+            slotOptions(c) +
             '</select><button type="button" class="slot-remove" data-action="remove-part" data-category="' +
             c +
             '" aria-label="Убрать: ' +
@@ -654,12 +741,14 @@
             c +
             '">' +
             slotInfo(c) +
-            "</p></section>",
+            '</p><p class="caption" id="slot-count-' +
+            c +
+            '"></p></section>',
         )
         .join(
           "",
         )}</div><div class="builder-actions"><button type="button" class="btn secondary" data-action="export">Скачать состав TXT</button><button type="button" class="btn secondary danger" data-action="clear-parts">Очистить состав</button></div></div><aside class="summary" aria-label="Бюджет и проверка сборки" id="builder-summary"></aside></div>`;
-    updateSummary();
+    refreshBuilderOptions();
   }
   function updateSummary() {
     const node = $("#builder-summary");
@@ -673,7 +762,7 @@
       esc(budgetNote(cost)) +
       "</p><h3>Проверка компонентов</h3>" +
       statusHTML(result) +
-      '<p class="caption section">Проверка ограничена известными параметрами. BIOS, QVL, разъёмы и крепления проверьте отдельно.</p><div class="stack"><button type="button" class="btn" data-action="share">Ссылка на сборку</button></div>';
+      '<p class="caption section">Проверка ограничена известными параметрами. BIOS, QVL, разъёмы, крепления и достаточность охлаждения проверьте отдельно.</p><div class="stack"><button type="button" class="btn" data-action="share">Ссылка на сборку</button></div>';
     if ($("#selected-count"))
       $("#selected-count").textContent = Object.keys(S.parts).length;
   }
@@ -686,7 +775,6 @@
       '[data-action="remove-part"][data-category="' + c + '"]',
     );
     if (remove) remove.disabled = S.parts[c] === undefined;
-    updateSummary();
   }
   function compare() {
     const rows = S.cmp.map((i) => P[i]);
@@ -745,22 +833,16 @@
       `<article class="prose"><div class="data-numbers">${P.length} моделей · ${B.length} готовые конфигурации · 8 категорий</div>
       <h2 id="prices">Как указаны цены</h2><p>В каталоге используются два вида цен. <strong>Зафиксированная цена</strong> — сумма из доступного снимка страницы конкретного магазина. Рядом указана дата фиксации, а в карточке модели есть источник и условия. Поисковый снимок страницы может отставать от магазина; наличие, город и действующую цену нужно уточнить у продавца.</p><p><strong>Расчётная цена</strong> — учебная оценка, записанная в наборе данных. Она не является предложением магазина. Новые магазинные цены не загружаются автоматически. Снимки старше 30 дней остаются в истории товара, но перестают участвовать в расчёте бюджета.</p><p>Оценка сборки — сумма цен её компонентов: снимков не старше 30 дней и расчётных оценок для остальных деталей. Цена без подтверждённого наличия остаётся снимком, а не обещанием продажи. В сумму не входят доставка, периферия, операционная система и услуги сборщика.</p>
       <h2>Зафиксированные предложения</h2><p>Сейчас сохранено ${offers.length} предложений для ${new Set(offers.map((o) => o.productId)).size} моделей. СОБРАНО не заявляет о партнёрстве с указанными магазинами.</p><ul>${offers.map((o) => '<li><a href="' + esc(o.url) + '" target="_blank" rel="noopener noreferrer">' + esc(o.store) + " — " + esc(P[Number(o.productId.slice(1))]?.name) + "</a>: " + money(o.price) + ", фиксация " + date(o.checkedAt) + ".</li>").join("")}</ul>
-      <h2 id="data">Характеристики и совместимость</h2><p>Названия моделей реальны. Характеристики сокращены до основных параметров, часть значений пока не заполнена. Отсутствующее значение обозначается «Не указано». Для покупки проверяйте точный артикул и документацию производителя: разные исполнения одной модели могут отличаться.</p><p>Конфигуратор проверяет сокеты, тип и объём памяти, число модулей, основные размеры и оценку мощности. Если для проверки нет данных, он сообщает об этом. Проверка не заменяет сверку BIOS, QVL, разъёмов питания, креплений и геометрии.</p>
+      <h2 id="data">Характеристики и совместимость</h2><p>Названия моделей реальны. Характеристики сокращены до основных параметров, часть значений пока не заполнена. Отсутствующее значение обозначается «Не указано». Для покупки проверяйте точный артикул и документацию производителя: разные исполнения одной модели могут отличаться.</p><p>Каталог и конфигуратор скрывают варианты, для которых обнаружен конфликт с выбранными деталями: сокеты, тип и объём памяти, число модулей, основные размеры и оценка мощности. Выбор работает в любом порядке. В каталоге можно отключить фильтр «Подходят к моей сборке», чтобы изучить все модели. Если для проверки не хватает данных, вариант остаётся с пометкой «Требует проверки». В сохранённом составе конфликтная деталь остаётся видимой для замены. Проверка не заменяет сверку BIOS, QVL, разъёмов питания, креплений, достаточности охлаждения и геометрии.</p>
       <h2>Сохранение и ссылки</h2><p>Избранное, сравнение и текущая сборка сохраняются в вашем браузере. При очистке данных браузера они удалятся. Ссылку на сборку можно открыть на другом устройстве; TXT-файл позволяет сохранить состав отдельно.</p>
-      <h2 id="photos">Фотографии и авторство</h2><p>Фотографии привязаны к указанной модели. Для референсной видеокарты есть отдельная пометка о версии. Если подходящий снимок отсутствует, показан значок категории с подписью «Фото не добавлено». Фото корпуса в сборке относится только к этому корпусу.</p><ul class="credit-list">${Media.credits()
+      <h2 id="photos">Фотографии и авторство</h2><p>Для точных моделей используются фотографии из указанных источников. Изображения линейки или исполнения другого производителя явно подписаны: объём памяти, число модулей, упаковка или внешний вид могут отличаться. Для референсной видеокарты есть пометка о версии. Если проверенного снимка нет, показан значок с подписью «Фото не добавлено». Фото корпуса в сборке показывает только корпус, а не собранный компьютер. Фотографии загружаются с внешних сайтов и требуют подключения к Интернету.</p><ul class="credit-list">${Media.credits()
         .map(
           (x) =>
-            '<li><a href="' +
-            esc(x.source) +
-            '" target="_blank" rel="noopener noreferrer">' +
+            "<li>" +
             esc(x.title || x.model) +
-            "</a> — " +
-            esc(x.author) +
-            ', <a href="' +
-            esc(x.licenseURL) +
-            '" target="_blank" rel="noopener noreferrer">' +
-            esc(x.license) +
-            "</a>. Показ с уменьшением, без изменения содержания.</li>",
+            " — " +
+            Media.sourceHTML(x) +
+            ". Показ с уменьшением, без изменения содержания.</li>",
         )
         .join(
           "",
@@ -868,9 +950,21 @@
       if (page === "compare") compare();
     }
     if (action === "add" && p) {
+      const result = Compatibility.assess(p, S.parts);
+      if (!result.allowed) {
+        toast(result.conflicts.join(" "));
+        return;
+      }
       S.parts[p.c] = index;
       persist();
       toast(p.name + " добавлен в текущую сборку.");
+      if (page === "catalog" || page === "favorites") {
+        drawProducts();
+        document
+          .querySelector('[data-action="add"][data-index="' + index + '"]')
+          ?.focus({ preventScroll: true });
+      } else if (page === "product") productDetail();
+      else if (page === "index") home();
     }
     if (action === "view") {
       params.set("view", button.dataset.view === "grid" ? "grid" : "list");
@@ -890,14 +984,14 @@
       delete S.parts[button.dataset.category];
       persist();
       syncBuilderURL();
-      updateSlot(button.dataset.category);
+      refreshBuilderOptions();
       $("#slot-" + button.dataset.category)?.focus();
     }
     if (action === "clear-parts") {
       S.parts = {};
       persist();
       syncBuilderURL();
-      cats.forEach(updateSlot);
+      refreshBuilderOptions();
       toast("Состав очищен.");
     }
     if (action === "clear-compare") {
@@ -952,14 +1046,29 @@
     if (event.target.id === "budget") drawBuilds();
   });
   document.addEventListener("change", (event) => {
+    if (event.target.id === "compatible-only") {
+      if (event.target.checked) params.delete("compat");
+      else params.set("compat", "all");
+      history.replaceState(
+        null,
+        "",
+        location.pathname + (params.size ? "?" + params : ""),
+      );
+      visible = 12;
+      drawProducts();
+    }
     if (event.target.form?.id === "catalog-filters") {
       clearTimeout(searchTimer);
       readFilters();
     }
-    if (event.target.id === "category-select")
+    if (event.target.id === "category-select") {
+      const next = new URLSearchParams();
+      if (event.target.value) next.set("cat", event.target.value);
+      if (params.get("compat") === "all") next.set("compat", "all");
       location.href =
         (page === "favorites" ? "favorites.html" : "catalog.html") +
-        (event.target.value ? "?cat=" + event.target.value : "");
+        (next.size ? "?" + next : "");
+    }
     if (event.target.id === "task") drawBuilds();
     if (event.target.id === "only-differences")
       document.querySelectorAll(".compare-table tr.same").forEach((tr) => {
@@ -970,11 +1079,18 @@
         value = event.target.value,
         index = Number(value);
       if (value === "") delete S.parts[c];
-      else if (Core.valid(index) && P[index].c === c) S.parts[c] = index;
+      else if (Core.valid(index) && P[index].c === c) {
+        const result = Compatibility.assess(P[index], S.parts);
+        if (!result.allowed) {
+          toast(result.conflicts.join(" "));
+          event.target.value = S.parts[c] ?? "";
+          return;
+        }
+        S.parts[c] = index;
+      }
       persist();
       syncBuilderURL();
-      updateSlot(c);
-      // Меняется только итог и подпись: select остаётся на месте и сохраняет фокус.
+      refreshBuilderOptions();
     }
   });
   document.addEventListener(
@@ -1056,10 +1172,12 @@
         counters();
         updateActions();
         if (page === "builder") {
-          cats.forEach(updateSlot);
+          refreshBuilderOptions();
           syncBuilderURL();
         }
-        if (page === "favorites") drawProducts();
+        if (page === "favorites" || page === "catalog") drawProducts();
+        if (page === "product") productDetail();
+        if (page === "index") home();
         if (page === "compare") compare();
       } catch {}
     }
