@@ -5,12 +5,19 @@ const path = require("node:path");
 const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 function load(offers) {
-  const context = vm.createContext({ window: {}, Date, URL, URLSearchParams });
-  for (const file of ["data.js", "offers.js"])
-    vm.runInContext(
-      fs.readFileSync(path.join(root, "js", file), "utf8"),
-      context,
-    );
+  const context = vm.createContext({
+    window: {
+      SOBRANO_DATA: JSON.parse(
+        fs.readFileSync(path.join(root, "data/catalog.json"), "utf8"),
+      ),
+      SOBRANO_OFFERS: JSON.parse(
+        fs.readFileSync(path.join(root, "data/offers.json"), "utf8"),
+      ),
+    },
+    Date,
+    URL,
+    URLSearchParams,
+  });
   if (offers) context.window.SOBRANO_OFFERS = offers;
   vm.runInContext(
     fs.readFileSync(path.join(root, "js/pricing.js"), "utf8"),

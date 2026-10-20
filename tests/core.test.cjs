@@ -1,15 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const vm = require("node:vm");
 const path = require("node:path");
-const context = { window: {} };
-vm.createContext(context);
-vm.runInContext(
-  fs.readFileSync(path.join(__dirname, "../js/data.js"), "utf8"),
-  context,
+const data = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../data/catalog.json"), "utf8"),
 );
-const data = JSON.parse(JSON.stringify(context.window.SOBRANO_DATA));
 const { create } = require("../js/core.js");
 const core = create(data);
 const find = (name) => core.products.find((product) => product.name === name);
