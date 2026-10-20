@@ -679,9 +679,6 @@ input[type="number"] {
 .compatibility-hint.conflict {
   color: var(--bad);
 }
-.compatibility-explanation {
-  margin: 0 0 18px;
-}
 .price-fields {
   margin: 0;
   padding: 0;
