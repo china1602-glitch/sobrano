@@ -1,5 +1,5 @@
 // Фотографии сопоставляются с моделью, а не с категорией.
-// Лицензии, авторы и исходные страницы сохранены для каждого снимка.
+// Для фотографий из Commons сохранены авторы и лицензии; для остальных — источник.
 (function (root) {
   "use strict";
 
@@ -17,16 +17,37 @@
     );
   const key = (value) =>
     String(typeof value === "string" ? value : value?.name || "")
-      .replace(/\s+(OEM|BOX)$/i, "")
       .replace(/\s+/g, " ")
       .trim()
+      .replace(/^(AMD Ryzen|Intel Core)(.+)\s+(OEM|BOX)$/i, "$1$2")
       .toLowerCase();
   const models = new Map();
 
+  function httpsURL(value) {
+    if (typeof value !== "string") return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  }
+
   function register(model, photo) {
-    if (!photo?.src || !photo?.source || !photo?.author || !photo?.licenseURL)
-      return;
-    models.set(key(model), Object.freeze({ ...photo, model, title: model }));
+    if (!key(model) || models.has(key(model))) return;
+    if (!httpsURL(photo?.src) || !httpsURL(photo?.source)) return;
+    if (!photo.sourceName && !photo.author) return;
+    if (photo.fallback && !httpsURL(photo.fallback)) return;
+    if (photo.license || photo.licenseURL) {
+      if (!photo.license || !httpsURL(photo.licenseURL)) return;
+    }
+    if (photo.kind && photo.kind !== "exact" && photo.kind !== "family") return;
+    const kind = photo.kind === "family" ? "family" : "exact";
+    if (kind === "family" && !photo.note) return;
+    models.set(
+      key(model),
+      Object.freeze({ ...photo, kind, model, title: model }),
+    );
   }
 
   // Уже проверенные фотографии из исходного набора используются только
@@ -143,8 +164,16 @@
     license: "CC BY-SA 4.0",
     licenseURL: "https://creativecommons.org/licenses/by-sa/4.0/",
     note: "Референсная версия (Founders Edition)",
+    kind: "family",
     checkedAt: "2026-10-20",
   });
+
+  // Совпадение модели требуется и для нового набора. Ранее проверенные
+  // свободные фотографии выше имеют приоритет перед дополнительными ссылками.
+  for (const photo of root.SOBRANO_PRODUCT_IMAGES || []) {
+    if (!Array.isArray(photo.models)) continue;
+    for (const model of photo.models) register(model, photo);
+  }
 
   const labels = {
     cpu: "Процессор",
@@ -174,6 +203,16 @@
     return models.get(key(product)) || null;
   }
 
+  function sourceHTML(photo) {
+    if (!photo || !httpsURL(photo.source)) return "";
+    const name = photo.author || photo.sourceName;
+    if (!name) return "";
+    const label = photo.author ? name : "Источник: " + name;
+    const source = `<a href="${esc(photo.source)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+    if (!photo.license || !httpsURL(photo.licenseURL)) return source;
+    return `${source} · <a href="${esc(photo.licenseURL)}" target="_blank" rel="noopener noreferrer">${esc(photo.license)}</a>`;
+  }
+
   function placeholder(product = {}, { className = "", large = false } = {}) {
     const category = product.c || product.category || "cpu";
     return `<figure class="product-media media-placeholder ${large ? "media-large" : ""} ${esc(className)}"
@@ -192,28 +231,59 @@
     if (!photo) return placeholder(product, options);
     const { className = "", large = false } = options;
     const size = large ? 480 : 160;
+    const packaging =
+      /\bBOX\b/i.test(photo.note || "") && /\bOEM\b/i.test(photo.note || "");
+    const captions = [];
+    if (photo.kind === "family") captions.push("Изображение линейки");
+    if (packaging)
+      captions.push("На фото BOX; OEM может быть без коробки и кулера");
+    if (photo.note?.includes("Founders Edition"))
+      captions.push("Founders Edition");
+    if (large && photo.note) captions.push(photo.note);
+    const description =
+      (photo.kind === "family" ? "Изображение линейки для " : "") +
+      product.name;
     return `<figure class="product-media ${large ? "media-large" : ""} ${esc(className)}"
-      data-media-category="${esc(product.c || "")}" data-media-model="${esc(product.name)}">
+      data-media-category="${esc(product.c || "")}" data-media-model="${esc(product.name)}" data-media-kind="${photo.kind}">
       <img src="${esc(photo.src)}" data-fallback="${esc(photo.fallback || photo.src)}"
-        alt="${esc(product.name + (photo.note ? "; " + photo.note : ""))}" width="${size}" height="${size}"
+        alt="${esc(description + (photo.note ? "; " + photo.note : ""))}" width="${size}" height="${size}"
         loading="lazy" decoding="async" referrerpolicy="no-referrer">
       <figcaption class="media-credit">
-        ${photo.note ? `<span class="media-note">${esc(photo.note)}</span>` : ""}
-        <a href="${esc(photo.source)}" target="_blank" rel="noopener noreferrer"
-          title="Фото ${esc(photo.model)} — ${esc(photo.author)}">${esc(photo.author)}</a>
-        · <a href="${esc(photo.licenseURL)}" target="_blank" rel="noopener noreferrer">${esc(photo.license)}</a>
+        ${captions.map((caption) => `<span class="media-note">${esc(caption)}</span><br>`).join("")}
+        ${sourceHTML(photo)}
       </figcaption>
     </figure>`;
   }
 
   function credits() {
-    return [...models.values()].filter(
-      (photo, index, all) =>
-        all.findIndex((item) => item.source === photo.source) === index,
-    );
+    const sources = new Map();
+    for (const photo of models.values()) {
+      const id = photo.source + "\n" + photo.src;
+      if (!sources.has(id)) sources.set(id, { ...photo, models: [] });
+      sources.get(id).models.push(photo.model);
+    }
+    return [...sources.values()];
   }
 
-  const api = { get, render, credits, placeholder };
+  function coverage(products = root.SOBRANO_DATA?.products || []) {
+    let exact = 0;
+    let family = 0;
+    for (const product of products) {
+      const photo = get(Array.isArray(product) ? product[1] : product);
+      if (photo?.kind === "exact") exact++;
+      if (photo?.kind === "family") family++;
+    }
+    return {
+      total: products.length,
+      withPhoto: exact + family,
+      withoutPhoto: products.length - exact - family,
+      exact,
+      family,
+      sources: credits().length,
+    };
+  }
+
+  const api = { get, render, credits, placeholder, sourceHTML, coverage };
   root.SobranoMedia = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window === "undefined" ? globalThis : window);
