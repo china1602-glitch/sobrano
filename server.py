@@ -17,6 +17,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
+sys.dont_write_bytecode = True  # кэш не нужен для локального запуска
+
 from backend import catalog, compatibility, pricing
 
 

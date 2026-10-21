@@ -6,9 +6,15 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/server.py",
-      "args": ["--port", "8080"],
+      "args": [
+        "--port",
+        "8080"
+      ],
       "cwd": "${workspaceFolder}",
-      "env": { "SOBRANO_DEBUG": "1" },
+      "env": {
+        "SOBRANO_DEBUG": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
       "console": "integratedTerminal",
       "justMyCode": true
     }
