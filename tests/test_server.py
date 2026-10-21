@@ -61,6 +61,14 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertIn(b"SobranoCompatibility", response.read())
 
+    def test_development_files_are_not_served(self):
+        for path in ("/.git/config", "/.vscode/launch.json", "/%2egit/config", "/.env"):
+            for method in ("GET", "HEAD"):
+                with self.subTest(path=path, method=method):
+                    with self.assertRaises(HTTPError) as caught:
+                        urlopen(Request(self.base + path, method=method), timeout=3)
+                    self.assertEqual(caught.exception.code, 404)
+
     def test_missing_resource_is_404(self):
         with self.assertRaises(HTTPError) as caught:
             urlopen(self.base + "/missing-file-for-test.html", timeout=3)

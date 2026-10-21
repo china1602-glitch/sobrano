@@ -1,3 +1,22 @@
+# Python
 __pycache__/
 *.py[cod]
 .venv/
+venv/
+env/
+.pytest_cache/
+# Secrets and private configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+# Dependencies and temporary files
+node_modules/
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

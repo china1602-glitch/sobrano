@@ -16,6 +16,8 @@
     runtime.baseURL || location.href,
   );
 
+  if (!apiBase.pathname.endsWith("/")) apiBase.pathname += "/";
+
   async function request(path, options = {}) {
     const controller = new AbortController();
     const timer =

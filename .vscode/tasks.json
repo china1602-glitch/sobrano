@@ -1,0 +1,64 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "СОБРАНО: Python API",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "server.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "СОБРАНО: статический сайт",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-B",
+        "-m",
+        "http.server",
+        "8000",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "СОБРАНО: тесты Python",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "СОБРАНО: тесты JavaScript",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "--test",
+        "tests/*.test.cjs"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

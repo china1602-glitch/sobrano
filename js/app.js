@@ -63,6 +63,17 @@ window.SOBRANO_APP_READY = (async function () {
     pendingChanges = 0,
     timer,
     searchTimer;
+  // Устаревшая или отредактированная ссылка не должна ломать Python-каталог.
+  if (page === "catalog" || page === "favorites") {
+    if (!cats.includes(params.get("cat"))) params.delete("cat");
+    if (!["name", "asc", "desc"].includes(params.get("sort"))) params.delete("sort");
+    if (params.get("compat") !== "all") params.delete("compat");
+    for (const key of ["min", "max"]) {
+      const value = params.get(key);
+      if (value !== null && (!value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0))
+        params.delete(key);
+    }
+  }
   let S = { fav: [], cmp: [], parts: {} };
   let startupStorageText = null,
     startupStorageChanged = false;
@@ -388,6 +399,13 @@ window.SOBRANO_APP_READY = (async function () {
     const target = $("#results");
     if (!target) return;
     const requestVersion = ++catalogueRequest;
+    if (!validatePriceRange()) {
+      $("#found").textContent = "Проверьте диапазон цены";
+      target.innerHTML = empty("Исправьте границы цены", "Цена «От» не должна превышать цену «До».");
+      $("#more").hidden = true;
+      target.removeAttribute("aria-busy");
+      return;
+    }
     const list =
       page === "favorites" ? P.filter((p) => S.fav.includes(p.i)) : P;
     const enabled = params.get("compat") !== "all";
@@ -459,9 +477,20 @@ window.SOBRANO_APP_READY = (async function () {
       );
     });
   }
+  function validatePriceRange() {
+    const form = $("#catalog-filters");
+    if (!form) return true;
+    const minimum = $("#min"), maximum = $("#max");
+    const reversed = minimum.value !== "" && maximum.value !== "" &&
+      Number(minimum.value) > Number(maximum.value);
+    const message = reversed ? "Цена «От» не должна превышать цену «До»." : "";
+    maximum.setCustomValidity(message);
+    $("#price-error").textContent = message;
+    return form.checkValidity();
+  }
   function readFilters(close = false) {
     const form = $("#catalog-filters");
-    if (!form) return;
+    if (!form || !validatePriceRange()) return;
     const next = new URLSearchParams();
     for (const [key, value] of new FormData(form))
       if (String(value).trim()) next.set(key, String(value).trim());
@@ -1249,9 +1278,7 @@ window.SOBRANO_APP_READY = (async function () {
   applyTheme(
     theme === "dark" || theme === "light"
       ? theme
-      : matchMedia("(prefers-color-scheme:dark)").matches
-        ? "dark"
-        : "light",
+      : "light",
   );
   themeButton.addEventListener("click", () => {
     const next =
@@ -1285,7 +1312,7 @@ window.SOBRANO_APP_READY = (async function () {
       ["light", "dark"].includes(event.newValue)
     )
       applyTheme(event.newValue);
-    if (event.key === KEY) {
+    if (event.key === KEY || event.key === null) {
       try {
         const incoming = sanitize(JSON.parse(event.newValue || "{}"));
         if (!(await changeComposition(incoming.parts, incoming))) return;

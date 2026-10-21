@@ -289,6 +289,7 @@
         <label for="min"><span>От</span><input id="min" name="min" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${escapeHTML(params.get("min") || "")}"></label>
         <label for="max"><span>До</span><input id="max" name="max" type="number" min="0" step="1" inputmode="numeric" placeholder="Без лимита" value="${escapeHTML(params.get("max") || "")}"></label>
       </fieldset>
+      <p id="price-error" class="bad caption" role="status" aria-live="polite"></p>
       ${facets(category, products)
         .map((facet) =>
           selectField(

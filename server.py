@@ -15,7 +15,9 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
+
+sys.dont_write_bytecode = True  # Не засоряем учебный проект двоичным кэшем.
 
 from backend import catalog, compatibility, pricing
 
@@ -275,12 +277,20 @@ class SobranoHandler(SimpleHTTPRequestHandler):
             self.send_json({"error": "Не удалось обработать данные проекта"}, 500, include_body=include_body)
         return True
 
+    def public_path(self):
+        # Служебные файлы Git, настройки редактора и .env не являются ресурсами сайта.
+        path = unquote(urlsplit(self.path).path).replace("\\", "/")
+        if any(part.startswith(".") for part in path.split("/") if part):
+            self.send_error(404, "File not found")
+            return False
+        return True
+
     def do_GET(self):
-        if not self.api_response():
+        if self.public_path() and not self.api_response():
             super().do_GET()
 
     def do_HEAD(self):
-        if not self.api_response(include_body=False):
+        if self.public_path() and not self.api_response(include_body=False):
             super().do_HEAD()
 
     def do_POST(self):
