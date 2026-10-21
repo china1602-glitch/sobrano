@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Практикум — задачи, дневник и учёт часов студенческой IT-практики. Локальное приложение с сохранением данных."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Отчёты — Практикум</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/js/theme.js"></script>
+    <script src="/js/app.js" defer></script>
+  </head>
+  <body data-page="reports">
+    <a class="skip" href="#main">К содержимому</a>
+    <div id="shell">
+      <main id="main" class="boot">
+        <h1>Практикум</h1>
+        <p role="status">Загружаем рабочее пространство…</p>
+      </main>
+    </div>
+    <noscript
+      ><p>
+        Включите JavaScript для работы с задачами и дневником. Запустите сайт
+        командой <code>py server.py</code>.
+      </p></noscript
+    >
+    <dialog id="modal" aria-labelledby="modal-title"></dialog>
+    <dialog id="confirmation" aria-labelledby="confirm-title"></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

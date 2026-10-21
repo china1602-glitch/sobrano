@@ -1,0 +1,7 @@
+{
+  "files.exclude": { "**/__pycache__": true, "**/*.pyc": true },
+  "search.exclude": { "**/__pycache__": true, "storage/": true },
+  "python.testing.unittestEnabled": true,
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "test_*.py"]
+}
