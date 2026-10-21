@@ -1,8 +1,12 @@
 import copy
+import csv
+import io
+import json
 import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from app.service import AppError, Store, calculate_minutes
 from app.reports import render_report
@@ -153,6 +157,131 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaises(AppError):
             self.save("entries",dict(self.entry,task_id=9999))
         self.assertEqual(self.store.state()["revision"],0)
+
+    def test_old_sqlite_profile_defaults_to_sixty_without_touching_records(self):
+        self.save("entries", self.entry)
+        before = self.store.state()
+        old_profile = dict(before["profile"])
+        old_profile.pop("hour_minutes")
+        with self.store.connect() as db:
+            db.execute("UPDATE profile SET content=? WHERE id=1", (json.dumps(old_profile),))
+        state = Store(self.tmp.name).state()
+        self.assertEqual(state["profile"]["hour_minutes"], 60)
+        self.assertEqual(state["stats"]["credited_hours"], 6)
+        self.assertEqual(state["stats"]["target_minutes"], 144 * 60)
+        self.assertEqual(state["entries"], before["entries"])
+        self.assertEqual(state["revision"], before["revision"])
+        self.assertEqual(self.store.backup()["profile"]["hour_minutes"], 60)
+
+    def test_changing_hour_unit_updates_plan_without_changing_actual_minutes(self):
+        self.save("entries", dict(self.entry, end_time="17:30", break_minutes=60))
+        profile = dict(self.store.state()["profile"], target_hours=10, hour_minutes=45)
+        self.save("profile", profile, "PUT")
+        state = self.store.state()
+        self.assertEqual(state["stats"]["minutes"], 450)
+        self.assertEqual(state["stats"]["hour_minutes"], 45)
+        self.assertEqual(state["stats"]["credited_hours"], 10)
+        self.assertEqual(state["stats"]["target_minutes"], 450)
+        self.assertEqual(state["stats"]["remaining_minutes"], 0)
+        self.assertEqual(state["stats"]["progress_percent"], 100)
+        self.assertEqual(state["stats"]["skills"]["testing"], 450)
+        self.assertEqual(sum(day["minutes"] for day in state["stats"]["weekly"]), 450)
+        self.save("profile", dict(profile, hour_minutes=60), "PUT")
+        state = self.store.state()
+        self.assertEqual(state["stats"]["credited_hours"], 7.5)
+        self.assertEqual(state["stats"]["target_minutes"], 600)
+        self.assertEqual(state["stats"]["remaining_minutes"], 150)
+        self.assertEqual(state["stats"]["progress_percent"], 75)
+        self.assertEqual(state["entries"][0]["minutes"], 450)
+        self.save("profile", dict(profile, target_hours=1, hour_minutes=60), "PUT")
+        self.assertEqual(self.store.state()["stats"]["progress_percent"], 750)
+        self.assertEqual(self.store.state()["stats"]["remaining_minutes"], 0)
+
+    def test_old_profile_update_preserves_selected_unit_but_old_backup_uses_sixty(self):
+        self.save("entries", self.entry)
+        profile = dict(self.store.state()["profile"], hour_minutes=45)
+        self.save("profile", profile, "PUT")
+        profile.pop("hour_minutes")
+        self.save("profile", dict(profile, name="Другое имя"), "PUT")
+        self.assertEqual(self.store.state()["profile"]["hour_minutes"], 45)
+        backup = self.store.backup()
+        backup["profile"].pop("hour_minutes")
+        self.save("restore", {"backup": backup, "confirm": True})
+        state = self.store.state()
+        self.assertEqual(state["profile"]["hour_minutes"], 60)
+        self.assertEqual(state["stats"]["minutes"], 360)
+        self.assertEqual(state["stats"]["credited_hours"], 6)
+
+    def test_hour_unit_only_accepts_integer_fortyfive_or_sixty(self):
+        profile = self.store.state()["profile"]
+        for value in (0, 30, 46, 75, "45", True, None, 45.0, [], {}):
+            with self.subTest(value=value), self.assertRaisesRegex(AppError, "45 или 60"):
+                self.save("profile", dict(profile, hour_minutes=value), "PUT")
+        self.assertEqual(self.store.state()["revision"], 0)
+
+    def test_academic_report_and_csv_keep_actual_minutes_and_label_credited_time(self):
+        self.save("entries", self.entry)
+        self.save("profile", dict(self.store.state()["profile"], hour_minutes=45), "PUT")
+        state = self.store.state()
+        report = render_report(state)
+        self.assertIn("Фактически:", report)
+        self.assertIn("6 ч 00 мин", report)
+        self.assertIn("8 акад. ч", report)
+        self.assertIn("Академический час — 45 минут", report)
+        rows = list(csv.reader(io.StringIO(self.store.csv().decode("utf-8-sig")), delimiter=";"))
+        self.assertEqual(rows[0][4], "Фактическая работа, мин")
+        self.assertEqual(rows[1][4], "360")
+        self.assertEqual(rows[1][7], "8")
+        self.assertEqual(rows[1][8], "Академический час (45 минут)")
+        self.save("profile", dict(state["profile"], hour_minutes=60), "PUT")
+        report = render_report(self.store.state())
+        self.assertIn("Астрономический час — 60 минут", report)
+        self.assertNotIn("акад. ч", report)
+
+    def test_calendar_leap_month_period_and_totals_exclude_other_month(self):
+        profile = dict(self.store.state()["profile"], start_date="2000-02-10", end_date="2000-03-03", hour_minutes=45)
+        self.save("profile", profile, "PUT")
+        entry = self.save("entries", dict(self.entry, date="2000-02-29", description="<b>Текст работы</b>"))
+        self.save("entries", dict(self.entry, date="2000-03-01"))
+        month = self.store.calendar("2000-02")
+        self.assertEqual(len(month["days"]), 29)
+        self.assertEqual(month["days"][0]["date"], "2000-02-01")
+        self.assertFalse(month["days"][8]["within_period"])
+        self.assertTrue(month["days"][9]["within_period"])
+        self.assertIsNone(month["days"][0]["entry_id"])
+        self.assertEqual(month["days"][0]["description"], "")
+        self.assertEqual(month["days"][-1]["entry_id"], entry["id"])
+        self.assertEqual(month["days"][-1]["description"], "<b>Текст работы</b>")
+        self.assertEqual(month["days"][-1]["skill"], "testing")
+        self.assertEqual(month["totals"], {"minutes": 360, "credited_hours": 8, "days": 1})
+        self.assertEqual(month["revision"], self.store.state()["revision"])
+        march = self.store.calendar("2000-03")
+        self.assertEqual(march["totals"]["days"], 1)
+        self.assertTrue(march["days"][2]["within_period"])
+        self.assertFalse(march["days"][3]["within_period"])
+
+    def test_calendar_current_month_future_markers_and_empty_period(self):
+        with patch("app.service.date", wraps=date) as clock:
+            clock.today.return_value = date(2026, 1, 15)
+            month = self.store.calendar()
+        self.assertEqual(month["month"], "2026-01")
+        self.assertEqual(month["today"], "2026-01-15")
+        self.assertEqual(len(month["days"]), 31)
+        self.assertFalse(month["days"][14]["is_future"])
+        self.assertTrue(month["days"][15]["is_future"])
+        self.assertTrue(all(day["within_period"] for day in month["days"]))
+        self.assertTrue(all(day["minutes"] == 0 for day in month["days"]))
+        self.assertEqual(month["totals"], {"minutes": 0, "credited_hours": 0, "days": 0})
+        self.assertEqual(len(self.store.calendar("2025-02")["days"]), 28)
+
+    def test_calendar_strict_month_and_year_boundaries(self):
+        for value in ("", "2026-1", "2026-01-01", "2026-00", "2026-13", "1999-12", "2101-01",
+                      "２０２６-０１", "2026-01 ", True, 202601, []):
+            with self.subTest(value=value), self.assertRaises(AppError):
+                self.store.calendar(value)
+        self.assertEqual(len(self.store.calendar("2000-01")["days"]), 31)
+        self.assertEqual(len(self.store.calendar("2100-02")["days"]), 28)
+        self.assertEqual(self.store.state()["revision"], 0)
 
 
 if __name__ == '__main__':

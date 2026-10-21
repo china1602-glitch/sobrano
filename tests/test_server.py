@@ -80,7 +80,56 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.call('/api/restore','POST',{'confirm':True,'backup':{'format':'praktikum','version':1,'mode':'personal','profile':[]}},self.headers())[0],400)
 
     def test_stale_http_revision(self):
-        self.assertEqual(self.call('/api/tasks','POST',{'title':'Stale'},{'Content-Type':'application/json','X-Praktikum-Request':'1','If-Match':'-1'})[0],409)
+        status, _, body = self.call('/api/tasks','POST',{'title':'Stale'},{'Content-Type':'application/json','X-Praktikum-Request':'1','If-Match':'-1'})
+        self.assertEqual(status, 409)
+        self.assertEqual(json.loads(body)["code"], "revision_conflict")
+
+    def test_calendar_contract_and_month_validation(self):
+        status, _, body = self.call('/api/calendar?mode=demo&month=2026-10')
+        self.assertEqual(status, 200)
+        calendar = json.loads(body)
+        self.assertEqual(set(calendar), {"month", "today", "start_date", "end_date", "hour_minutes",
+                                        "target_hours", "days", "totals", "revision"})
+        self.assertEqual(calendar["month"], "2026-10")
+        self.assertEqual(len(calendar["days"]), 31)
+        self.assertEqual(calendar["days"][0]["date"], "2026-10-01")
+        self.assertEqual(calendar["days"][-1]["date"], "2026-10-31")
+        self.assertEqual(set(calendar["days"][0]), {"date", "minutes", "entry_id", "skill", "description", "within_period", "is_future"})
+        self.assertEqual(self.call('/api/calendar')[0], 200)
+        for query in ('month=', 'month=2026-1', 'month=2026-13', 'month=1999-12', 'month=2101-01', 'mode=other'):
+            with self.subTest(query=query):
+                self.assertEqual(self.call('/api/calendar?' + query)[0], 400)
+        health = json.loads(self.call('/api/health')[2])
+        self.assertEqual(health["version"], "1.1.0")
+
+    def test_academic_hours_pass_through_http_state_and_calendar(self):
+        profile = self.state()["profile"]
+        academic = dict(profile, hour_minutes=45)
+        try:
+            self.assertEqual(self.call('/api/profile', 'PUT', academic, self.headers())[0], 200)
+            state = self.state()
+            self.assertEqual(state["profile"]["hour_minutes"], 45)
+            self.assertEqual(state["stats"]["target_minutes"], academic["target_hours"] * 45)
+            calendar = json.loads(self.call('/api/calendar')[2])
+            self.assertEqual(calendar["hour_minutes"], 45)
+            report = self.call('/api/report')[2].decode()
+            self.assertIn("Академический час — 45 минут", report)
+            self.assertEqual(self.call('/api/profile', 'PUT', dict(academic, hour_minutes=50), self.headers())[0], 400)
+        finally:
+            self.call('/api/profile', 'PUT', profile, self.headers())
+
+    def test_duplicate_date_is_not_a_revision_conflict(self):
+        entry = {"date": date.today().isoformat(), "start_time": "09:00", "end_time": "10:00",
+                 "break_minutes": 0, "description": "Проверка повторной даты"}
+        status, _, body = self.call('/api/entries', 'POST', entry, self.headers())
+        self.assertEqual(status, 201)
+        entry_id = json.loads(body)["id"]
+        try:
+            status, _, body = self.call('/api/entries', 'POST', entry, self.headers())
+            self.assertEqual(status, 409)
+            self.assertNotIn("code", json.loads(body))
+        finally:
+            self.call(f'/api/entries/{entry_id}', 'DELETE', {}, self.headers())
 
     def test_report_and_bad_ranges(self):
         status,headers,body=self.call('/api/report?mode=demo')

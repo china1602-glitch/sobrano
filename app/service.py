@@ -1,7 +1,9 @@
 """Бизнес-логика. Не зависит от браузера или HTTP-сервера."""
+import calendar
 import csv
 import io
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
@@ -11,13 +13,15 @@ ROOT = Path(__file__).resolve().parent.parent
 GUIDES = json.loads((ROOT / "data" / "guides.json").read_text(encoding="utf-8"))
 SKILLS = {g["id"] for g in GUIDES}
 DEFAULT_PROFILE = {"name": "", "group": "", "specialty": "", "organization": "",
-                   "supervisor": "", "start_date": "", "end_date": "", "target_hours": 144}
+                   "supervisor": "", "start_date": "", "end_date": "", "target_hours": 144,
+                   "hour_minutes": 60}
 
 
 class AppError(Exception):
-    def __init__(self, message, status=400):
+    def __init__(self, message, status=400, code=None):
         super().__init__(message)
         self.status = status
+        self.code = code
 
 
 def text(value, label, limit=200, required=False):
@@ -80,6 +84,10 @@ def validate_profile(data):
     if result["start_date"] and result["end_date"] and result["start_date"] > result["end_date"]:
         raise AppError("Конец практики не может быть раньше начала.")
     result["target_hours"] = integer(data.get("target_hours", 144), "План часов", 1, 2000)
+    hour_minutes = data.get("hour_minutes", 60)
+    if isinstance(hour_minutes, bool) or not isinstance(hour_minutes, int) or hour_minutes not in (45, 60):
+        raise AppError("Единица учёта: выберите 45 или 60 минут.")
+    result["hour_minutes"] = hour_minutes
     return result
 
 
@@ -189,7 +197,9 @@ class Store:
 
     @staticmethod
     def _profile(db):
-        return json.loads(db.execute("SELECT content FROM profile WHERE id=1").fetchone()[0])
+        stored = json.loads(db.execute("SELECT content FROM profile WHERE id=1").fetchone()[0])
+        # Профили версии 1.0 не содержали hour_minutes и учитывали часы по 60 минут.
+        return dict(DEFAULT_PROFILE, **stored)
 
     def state(self, query=None):
         query = query or {}
@@ -212,6 +222,12 @@ class Store:
         stats = {"minutes": minutes, "days": len(entries), "completed": sum(t["status"] == "done" for t in tasks),
                  "tasks": len(tasks), "overdue": sum(t["status"] != "done" and bool(t["due_date"]) and t["due_date"] < today.isoformat() for t in tasks),
                  "weekly": weekly, "skills": {s: sum(e["minutes"] for e in entries if e["skill"] == s) for s in SKILLS}}
+        target_minutes = profile["target_hours"] * profile["hour_minutes"]
+        stats.update({"target_minutes": target_minutes,
+                      "credited_hours": minutes / profile["hour_minutes"],
+                      "remaining_minutes": max(0, target_minutes - minutes),
+                      "hour_minutes": profile["hour_minutes"],
+                      "progress_percent": round(minutes / target_minutes * 100, 1)})
         filtered_tasks = [t for t in tasks if (not query.get("status") or t["status"] == query["status"])
                           and (not query.get("priority") or t["priority"] == query["priority"])
                           and query.get("q", "").casefold() in (t["title"] + " " + t["description"]).casefold()]
@@ -230,6 +246,42 @@ class Store:
                 "tasks": filtered_tasks, "entries": filtered_entries, "guides": GUIDES,
                 "allTasks": [{"id": t["id"], "title": t["title"]} for t in tasks], "today": today.isoformat()}
 
+    def calendar(self, month=None):
+        """Календарь месяца из сохранённого дневника; рабочее время остаётся в минутах."""
+        today = date.today()
+        if month is None:
+            month = today.strftime("%Y-%m")
+        if not isinstance(month, str) or not re.fullmatch(r"[0-9]{4}-(?:0[1-9]|1[0-2])", month):
+            raise AppError("Месяц укажите в формате ГГГГ-ММ.")
+        year, number = map(int, month.split("-"))
+        if not 2000 <= year <= 2100:
+            raise AppError("Календарь поддерживает годы с 2000 по 2100.")
+        day_count = calendar.monthrange(year, number)[1]
+        first, last = f"{month}-01", f"{month}-{day_count:02d}"
+        with self.connect() as db:
+            db.execute("BEGIN")
+            profile = self._profile(db)
+            revision = db.execute("SELECT revision FROM meta").fetchone()[0]
+            records = {row["date"]: dict(row) for row in db.execute(
+                "SELECT * FROM entries WHERE date BETWEEN ? AND ? ORDER BY date", (first, last))}
+        days = []
+        for number in range(1, day_count + 1):
+            day = f"{month}-{number:02d}"
+            entry = records.get(day)
+            days.append({"date": day, "minutes": entry["minutes"] if entry else 0,
+                         "entry_id": entry["id"] if entry else None,
+                         "skill": entry["skill"] if entry else "",
+                         "description": entry["description"] if entry else "",
+                         "within_period": (not profile["start_date"] or day >= profile["start_date"])
+                                          and (not profile["end_date"] or day <= profile["end_date"]),
+                         "is_future": day > today.isoformat()})
+        minutes = sum(row["minutes"] for row in records.values())
+        return {"month": month, "today": today.isoformat(), "start_date": profile["start_date"],
+                "end_date": profile["end_date"], "hour_minutes": profile["hour_minutes"],
+                "target_hours": profile["target_hours"], "days": days,
+                "totals": {"minutes": minutes, "credited_hours": minutes / profile["hour_minutes"],
+                           "days": len(records)}, "revision": revision}
+
     def mutate(self, resource, method, data, revision, item_id=None):
         if not isinstance(data, dict):
             raise AppError("Ожидается объект JSON.")
@@ -237,10 +289,12 @@ class Store:
             db.execute("BEGIN IMMEDIATE")
             actual = db.execute("SELECT revision FROM meta").fetchone()[0]
             if revision is None or str(actual) != str(revision):
-                raise AppError("Данные изменились в другой вкладке. Обновите страницу и повторите действие.", 409)
+                raise AppError("Данные изменились в другой вкладке. Загрузите актуальные данные и повторите действие.",
+                               409, code="revision_conflict")
             profile = self._profile(db)
             if resource == "profile" and method == "PUT":
-                clean = validate_profile(data)
+                # Старый интерфейс может не отправить новое поле: сохраняем выбранную единицу.
+                clean = validate_profile(dict(data, hour_minutes=data.get("hour_minutes", profile["hour_minutes"])))
                 for entry in db.execute("SELECT date FROM entries"):
                     if (clean["start_date"] and entry[0] < clean["start_date"]) or (clean["end_date"] and entry[0] > clean["end_date"]):
                         raise AppError("В дневнике есть записи за пределами нового периода. Сначала исправьте записи.")
@@ -332,11 +386,15 @@ class Store:
         state = self.state(query)
         output = io.StringIO(newline="")
         writer = csv.writer(output, delimiter=";")
-        writer.writerow(["Дата", "Начало", "Конец", "Перерыв, мин", "Работа, мин", "Выполненная работа", "Направление"])
+        writer.writerow(["Дата", "Начало", "Конец", "Перерыв, мин", "Фактическая работа, мин",
+                         "Выполненная работа", "Направление", "Учтено, часов", "Единица учёта"])
         names = {g["id"]: g["title"] for g in GUIDES}
+        hour_minutes = state["profile"]["hour_minutes"]
+        unit = "Академический час (45 минут)" if hour_minutes == 45 else "Астрономический час (60 минут)"
         def safe(value):
             return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
         for entry in reversed(state["entries"]):
             writer.writerow([entry["date"], entry["start_time"], entry["end_time"], entry["break_minutes"],
-                             entry["minutes"], safe(entry["description"]), names.get(entry["skill"], "Не указано")])
+                             entry["minutes"], safe(entry["description"]), names.get(entry["skill"], "Не указано"),
+                             f'{entry["minutes"] / hour_minutes:.2f}'.rstrip("0").rstrip(".").replace(".", ","), unit])
         return ("\ufeff" + output.getvalue()).encode("utf-8")

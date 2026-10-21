@@ -17,7 +17,7 @@ from app.service import AppError, Store
 from app.reports import render_report
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -60,7 +60,10 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             callback()
         except AppError as error:
-            self.respond({"error": str(error)}, error.status)
+            payload = {"error": str(error)}
+            if error.code:
+                payload["code"] = error.code
+            self.respond(payload, error.status)
         except (json.JSONDecodeError, UnicodeDecodeError):
             self.respond({"error": "Не удалось прочитать JSON. Проверьте формат файла."}, 400)
         except (BrokenPipeError, ConnectionResetError):
@@ -81,6 +84,8 @@ class Handler(SimpleHTTPRequestHandler):
             store = Store(self.server.data_dir, query.get("mode", "personal"))
             if path == "/api/state":
                 return self.respond(store.state(query))
+            if path == "/api/calendar":
+                return self.respond(store.calendar(query.get("month")))
             if path == "/api/backup":
                 return self.respond(store.backup(), filename=f"praktikum-{store.mode}.json")
             if path == "/api/csv":

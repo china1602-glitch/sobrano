@@ -45,6 +45,7 @@
     ["index", "Обзор", "home"],
     ["tasks", "Мои задачи", "tasks"],
     ["diary", "Дневник", "diary"],
+    ["calendar", "Календарь", "calendar"],
     ["guides", "База знаний", "guides"],
     ["reports", "Отчёты", "reports"],
     ["settings", "Настройки", "settings"],
@@ -68,7 +69,11 @@
     toastTimer,
     debounceTimer,
     limit = 24,
-    writing = false;
+    writing = false,
+    calendarData,
+    calendarMonth = "",
+    calendarLoading = false,
+    leaving = false;
   try {
     mode =
       localStorage.getItem("praktikum-mode") === "demo" ? "demo" : "personal";
@@ -78,6 +83,12 @@
   const decimalHours = (mins) =>
     new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(
       mins / 60,
+    );
+  const unitLabel = () =>
+    state?.profile.hour_minutes === 45 ? "акад. ч" : "ч";
+  const credited = (minutes) =>
+    new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(
+      minutes / (state?.profile.hour_minutes || 60),
     );
   const dayText = (date, opts = {}) =>
     date
@@ -127,8 +138,12 @@
         "Сервер вернул неверный ответ. Запустите именно py server.py, затем повторите действие.",
       );
     }
-    if (!response.ok)
-      throw new Error(result.error || "Не удалось выполнить запрос.");
+    if (!response.ok) {
+      const error = new Error(result.error || "Не удалось выполнить запрос.");
+      error.status = response.status;
+      error.code = result.code;
+      throw error;
+    }
     return result;
   }
   function toast(message) {
@@ -172,7 +187,7 @@
     updateTheme();
   }
   const footer = () =>
-    `<footer class="footer"><span>Практикум · Личное пространство для студенческой практики</span><span>Сохранение на вашем компьютере · v1.0</span></footer>`;
+    `<footer class="footer"><span>Практикум · Личное пространство для студенческой практики</span><span>Сохранение на вашем компьютере · v1.1</span></footer>`;
   function context() {
     return mode === "demo"
       ? `<aside class="context" aria-label="Учебный режим">${icon("info")}<p><strong>Учебный пример.</strong> Здесь вымышленные записи для знакомства с сервисом. Ваши данные хранятся отдельно.</p>${btn("К моим записям", "mode", "small secondary")}</aside>`
@@ -188,7 +203,34 @@
     $("#main").innerHTML =
       `<div class="panel fatal"><p class="eyebrow">Связь с рабочим пространством</p><h1>Не удалось загрузить данные</h1><p>${esc(error.message)}</p><p>В терминале папки проекта запустите:</p><p><code>py server.py</code></p>${btn("Повторить загрузку", "retry")}</div>`;
   }
-  async function load(partial = false) {
+  function showLoadError(message, stale = true) {
+    const box = $("#load-error");
+    if (!box) return toast(message);
+    box.innerHTML = `${esc(message)}<div class="actions">${btn("Повторить загрузку", "retry", "small secondary")}${btn("Сбросить фильтры", "reset-filters", "small secondary")}</div>`;
+    box.hidden = false;
+    const results = $("#results");
+    if (results && stale) {
+      results.classList.add("stale-results");
+      results.inert = true;
+      results.setAttribute("aria-describedby", "load-error");
+    }
+  }
+  function clearLoadError() {
+    const box = $("#load-error");
+    if (box) box.hidden = true;
+    const results = $("#results");
+    if (results) {
+      results.classList.remove("stale-results");
+      results.inert = false;
+      results.removeAttribute("aria-describedby");
+    }
+  }
+  async function load(
+    partial = false,
+    requestedMode = mode,
+    requestedMonth = calendarMonth,
+  ) {
+    const switching = requestedMode !== mode;
     const own = ++sequence;
     $("#results")?.setAttribute("aria-busy", "true");
     try {
@@ -203,16 +245,49 @@
           : ["diary", "reports"].includes(page)
             ? { entry_q: filters.entry_q, from: filters.from, to: filters.to }
             : {};
-      const result = await request("state", "GET", undefined, undefined, query);
+      if (switching) Object.keys(query).forEach((key) => delete query[key]);
+      query.mode = requestedMode;
+      let result = await request("state", "GET", undefined, undefined, query);
+      let calendar;
+      if (page === "calendar") {
+        calendar = await request("calendar", "GET", undefined, undefined, {
+          mode: requestedMode,
+          month: (!switching && requestedMonth) || result.today.slice(0, 7),
+        });
+        if (calendar.revision !== result.revision)
+          result = await request("state", "GET", undefined, undefined, {
+            mode: requestedMode,
+          });
+        if (calendar.revision !== result.revision)
+          throw new Error(
+            "Записи изменились во время загрузки. Повторите запрос.",
+          );
+      }
       if (own !== sequence) return;
+      if (switching) {
+        mode = requestedMode;
+        try {
+          localStorage.setItem("praktikum-mode", mode);
+        } catch {}
+        Object.keys(filters).forEach(
+          (key) => (filters[key] = key === "sort" ? "new" : ""),
+        );
+        limit = 24;
+        updateMode();
+      }
       state = result;
+      if (calendar) {
+        calendarData = calendar;
+        calendarMonth = calendar.month;
+      }
       if (partial && $("#results")) {
         $("#results").innerHTML =
           page === "tasks" ? taskResults() : diaryResults();
-        $("#results").removeAttribute("aria-busy");
         const count = $("#result-count");
         if (count) count.textContent = resultCount();
       } else render();
+      clearLoadError();
+      $("#results")?.removeAttribute("aria-busy");
       $("#initials").textContent = state.profile.name
         ? state.profile.name
             .trim()
@@ -223,22 +298,30 @@
         : "П";
     } catch (error) {
       if (own !== sequence) return;
-      if (partial) {
-        toast(error.message);
-        $("#results")?.removeAttribute("aria-busy");
-      } else fatal(error);
+      $("#results")?.removeAttribute("aria-busy");
+      if (state && $("#load-error"))
+        showLoadError(`Данные не обновлены. ${error.message}`);
+      else fatal(error);
     }
   }
+
   function render() {
     const views = {
       index: overview,
       tasks: tasksPage,
       diary: diaryPage,
+      calendar: calendarPage,
       guides: guidesPage,
       reports: reportsPage,
       settings: settingsPage,
     };
-    $("#main").innerHTML = context() + views[page]() + footer();
+    $("#main").innerHTML =
+      context() +
+      '<div id="load-error" class="error load-error" role="alert" hidden></div>' +
+      views[page]() +
+      footer();
+    const profileForm = $("#profile-form");
+    if (profileForm) rememberForm(profileForm);
     if (page === "guides") {
       const guide = new URLSearchParams(location.search).get("guide");
       if (guide && state.guides.some((g) => g.id === guide)) showGuide(guide);
@@ -252,7 +335,8 @@
   function overview() {
     const p = state.profile,
       s = state.stats;
-    const percent = Math.round((s.minutes / (p.target_hours * 60)) * 100);
+    const percent = Math.round(s.progress_percent);
+    const targetMinutes = s.target_minutes;
     const upcoming = state.tasks
       .filter((t) => t.status !== "done")
       .sort((a, b) =>
@@ -273,9 +357,9 @@
       (mode === "personal" && !p.name
         ? `<aside class="context setup"><p><strong>С чего начать?</strong> Укажите данные практики и план часов или откройте учебный пример.</p>${link("Настроить практику", "/settings.html", "small secondary")}</aside>`
         : "") +
-      `<section class="stats" aria-label="Итоги практики"><div class="stat"><div class="stat-top">Отработано ${icon("clock")}</div><div class="value">${decimalHours(s.minutes)} <small>из ${p.target_hours} ч</small></div><p>${percent}% от вашего плана</p></div><div class="stat"><div class="stat-top">Задачи ${icon("check")}</div><div class="value">${s.completed} <small>из ${s.tasks}</small></div><p>Завершено за практику</p></div><div class="stat"><div class="stat-top">Рабочие дни ${icon("calendar")}</div><div class="value">${s.days}</div><p>Записано в дневнике</p></div><div class="stat"><div class="stat-top">Требуют внимания ${icon("flag")}</div><div class="value">${s.overdue}</div><p>Задач с прошедшим сроком</p></div></section>` +
+      `<section class="stats" aria-label="Итоги практики"><div class="stat"><div class="stat-top">Зачтено по плану ${icon("clock")}</div><div class="value">${credited(s.minutes)} <small>из ${p.target_hours} ${unitLabel()}</small></div><p>${percent}% плана · по ${p.hour_minutes || 60} мин в часе</p></div><div class="stat"><div class="stat-top">Задачи ${icon("check")}</div><div class="value">${s.completed} <small>из ${s.tasks}</small></div><p>Завершено за практику</p></div><div class="stat"><div class="stat-top">Рабочие дни ${icon("calendar")}</div><div class="value">${s.days}</div><p>Записано в дневнике</p></div><div class="stat"><div class="stat-top">Требуют внимания ${icon("flag")}</div><div class="value">${s.overdue}</div><p>Задач с прошедшим сроком</p></div></section>` +
       `<div class="split"><section class="panel"><div class="panel-head"><h2>Ближайшие задачи</h2><a href="/tasks.html">Все задачи →</a></div>${upcoming.length ? upcoming.map((t) => taskRow(t, true)).join("") : empty("Можно начать с малого", "Добавьте задачу, которую сможете выполнить и проверить.", btn("Добавить задачу", "new-task", "small secondary"), true)}</section>
-      <section class="panel"><div class="panel-head"><h2>На этой неделе</h2><span class="tag">${duration(s.weekly.reduce((sum, d) => sum + d.minutes, 0))}</span></div><div class="week-chart" role="img" aria-label="Отработанные часы по дням текущей недели">${s.weekly.map((d, i) => `<div class="chart-day"><small>${decimalHours(d.minutes)} ч</small><progress value="${d.minutes}" max="720" aria-label="${dayText(d.date)}: ${duration(d.minutes)}"></progress><span>${["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"][i]}</span></div>`).join("")}</div><div class="progress-label"><span>Общий план практики</span><strong>${Math.min(percent, 100)}%</strong></div><progress value="${Math.min(s.minutes, p.target_hours * 60)}" max="${p.target_hours * 60}" aria-label="Выполнение плана часов"></progress><p class="tip-line">${s.minutes >= p.target_hours * 60 ? "План часов выполнен. Проверьте дневник перед подготовкой отчёта." : `До плана осталось ${duration(p.target_hours * 60 - s.minutes)}.`}</p></section></div>
+      <section class="panel"><div class="panel-head"><h2>На этой неделе</h2><span class="tag">${duration(s.weekly.reduce((sum, d) => sum + d.minutes, 0))}</span></div><div class="week-chart" role="img" aria-label="Отработанные часы по дням текущей недели">${s.weekly.map((d, i) => `<div class="chart-day"><small>${decimalHours(d.minutes)} ч</small><progress value="${d.minutes}" max="720" aria-label="${dayText(d.date)}: ${duration(d.minutes)}"></progress><span>${["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"][i]}</span></div>`).join("")}</div><div class="progress-label"><span>Общий план практики</span><strong>${Math.min(percent, 100)}%</strong></div><progress value="${Math.min(s.minutes, targetMinutes)}" max="${targetMinutes}" aria-label="Выполнение плана часов"></progress><p class="tip-line">${s.minutes >= targetMinutes ? "План часов выполнен. Проверьте дневник перед подготовкой отчёта." : `До плана осталось ${credited(s.remaining_minutes)} ${unitLabel()} (${duration(s.remaining_minutes)} фактически).`}</p></section></div>
       <div class="panel-head bottom-heading"><h2>Под рукой</h2><a href="/guides.html">Вся база знаний →</a></div><div class="guide-strip">${state.guides
         .slice(0, 3)
         .map(
@@ -364,15 +448,76 @@
         "Сохраняйте результат каждого рабочего дня.",
         btn("Добавить запись", "new-entry", "", "plus"),
       ) +
-      `<form class="filters" id="diary-filters" role="search"><label class="field search-field"><span>Поиск по записям</span><input name="entry_q" type="search" value="${esc(filters.entry_q)}" placeholder="Что было сделано…" maxlength="200"></label><label class="field"><span>С даты</span><input type="date" name="from" value="${filters.from}"></label><label class="field"><span>По дату</span><input type="date" name="to" value="${filters.to}"></label><button class="btn secondary" type="submit">Показать</button></form>
+      `<p class="diary-calendar-link"><a href="/calendar.html">${icon("calendar")} Открыть календарь рабочих дней →</a></p><form class="filters" id="diary-filters" role="search"><label class="field search-field"><span>Поиск по записям</span><input name="entry_q" type="search" value="${esc(filters.entry_q)}" placeholder="Что было сделано…" maxlength="200"></label><label class="field"><span>С даты</span><input type="date" name="from" value="${filters.from}"></label><label class="field"><span>По дату</span><input type="date" name="to" value="${filters.to}"></label><button class="btn secondary" type="submit">Показать</button></form>
       <p class="results-head" id="result-count" role="status">${resultCount()}</p><div id="results">${diaryResults()}</div>`
     );
   }
+  async function changeMonth(month) {
+    if (
+      calendarLoading ||
+      !/^\d{4}-\d{2}$/.test(month) ||
+      month < "2000-01" ||
+      month > "2100-12"
+    )
+      return;
+    calendarLoading = true;
+    const controls = [
+      ...document.querySelectorAll(
+        ".calendar-toolbar button,#calendar-filter button,#calendar-filter input",
+      ),
+    ];
+    const previous = controls.map((control) => control.disabled);
+    controls.forEach((control) => (control.disabled = true));
+    try {
+      await load(false, mode, month);
+    } finally {
+      calendarLoading = false;
+      controls.forEach((control, i) => (control.disabled = previous[i]));
+    }
+  }
+
+  function calendarPage() {
+    const data = calendarData;
+    const first = new Date(`${data.month}-01T12:00:00`);
+    const padding = (first.getDay() + 6) % 7;
+    const label = first.toLocaleDateString("ru-RU", {
+      month: "long",
+      year: "numeric",
+    });
+    const entries = data.days.filter((day) => day.entry_id).reverse();
+    return (
+      head(
+        "Календарь практики",
+        "Посмотрите рабочие дни и заполните дневник прямо из календаря.",
+        btn("Записать сегодня", "new-entry", "", "plus"),
+      ) +
+      `<section class="stats calendar-stats" aria-label="Итоги выбранного месяца"><div class="stat"><div class="stat-top">Зачтено за месяц ${icon("check")}</div><div class="value">${credited(data.totals.minutes)} <small>${unitLabel()}</small></div><p>По ${data.hour_minutes} минут в часе</p></div><div class="stat"><div class="stat-top">Фактическое время ${icon("clock")}</div><div class="value">${decimalHours(data.totals.minutes)} <small>ч</small></div><p>Перерывы исключены</p></div><div class="stat"><div class="stat-top">Заполнено дней ${icon("calendar")}</div><div class="value">${data.totals.days}</div><p>Записей в выбранном месяце</p></div></section>
+      <div class="calendar-layout"><section class="panel calendar-panel" aria-labelledby="month-heading"><div class="calendar-toolbar"><div class="month-navigation"><button class="icon-button" data-action="calendar-prev" aria-label="Предыдущий месяц" ${data.month === "2000-01" ? "disabled" : ""}>←</button><h2 id="month-heading">${esc(label)}</h2><button class="icon-button" data-action="calendar-next" aria-label="Следующий месяц" ${data.month === "2100-12" ? "disabled" : ""}>→</button></div><button class="btn secondary small" data-action="calendar-today">Текущий месяц</button></div>
+      <form id="calendar-filter" class="calendar-month-field"><label class="field"><span>Перейти к месяцу</span><input type="month" name="month" required min="2000-01" max="2100-12" value="${data.month}"></label><button class="btn secondary small" type="submit">Показать</button></form>
+      <div class="calendar-legend"><span><i class="legend-dot filled"></i>Есть запись</span><span><i class="legend-dot today"></i>Сегодня</span><span><i class="legend-dot unavailable"></i>Недоступная дата</span></div>
+      <div class="calendar-weekdays" aria-hidden="true">${["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"].map((d) => `<span>${d}</span>`).join("")}</div><div class="calendar-grid" role="group" aria-label="Дни месяца">${Array.from({ length: padding }, () => '<span class="calendar-gap" aria-hidden="true"></span>').join("")}${data.days
+        .map((day) => {
+          const disabled =
+            !day.entry_id && (day.is_future || !day.within_period);
+          const dayLabel = dayText(day.date, {
+            month: "long",
+            year: "numeric",
+            weekday: "long",
+          });
+          return `<button class="calendar-day ${day.entry_id ? "recorded" : ""} ${day.date === data.today ? "current-day" : ""}" data-action="calendar-day" data-date="${day.date}" data-id="${day.entry_id || ""}" ${disabled ? "disabled" : ""} ${day.date === data.today ? 'aria-current="date"' : ""} aria-label="${esc(dayLabel)}: ${day.entry_id ? duration(day.minutes) + ". Изменить запись" : disabled ? "Запись недоступна" : "Добавить запись"}"><span class="calendar-number">${Number(day.date.slice(8))}</span>${day.entry_id ? `<span class="calendar-hours">${credited(day.minutes)}<span> ${unitLabel()}</span></span><span class="calendar-indicator" aria-hidden="true"></span>` : '<span class="calendar-empty" aria-hidden="true">·</span>'}</button>`;
+        })
+        .join(
+          "",
+        )}</div><p class="note">Нажмите день, чтобы добавить или изменить запись. Будущие даты и дни за пределами периода практики недоступны. Период можно изменить в <a href="/settings.html">настройках</a>.</p></section>
+      <aside class="panel calendar-journal"><div class="panel-head"><h2>Записи за месяц</h2></div>${entries.length ? entries.map((day) => `<button class="calendar-entry" data-action="calendar-day" data-date="${day.date}" data-id="${day.entry_id}"><span class="calendar-entry-heading"><strong>${dayText(day.date)}</strong><span>${duration(day.minutes)}</span></span><span class="calendar-entry-text">${esc(day.description)}</span><span class="small muted">${esc(skillName(day.skill))} →</span></button>`).join("") : empty("Здесь появятся рабочие дни", "Выберите прошедший день в календаре и опишите выполненную работу.", "", true)}</aside></div>`
+    );
+  }
+
   function guidesPage() {
     return (
       head("База знаний", "Короткие инструкции для настоящих рабочих задач.") +
       `<div class="guide-grid">${state.guides.map((g, i) => `<article class="panel guide-card"><img src="/assets/${g.image}" alt="${esc(g.title)}: практическая памятка" loading="lazy"><div class="guide-body"><p class="eyebrow">Памятка / 0${i + 1}</p><h2>${esc(g.title)}</h2><p>${esc(g.subtitle)}</p><button class="text-button" data-action="guide" data-guide="${g.id}">Открыть памятку →</button><div class="guide-time">${icon("clock")}Практическое задание · ≈ ${g.time} мин</div></div></article>`).join("")}</div>
-      <div class="panel-head bottom-heading"><h2>Ваш опыт по направлениям</h2></div><p class="small muted">Часы из дневника. Они показывают затраченное время и не заменяют оценку руководителя.</p><div class="guide-progress">${state.guides.map((g) => `<div class="skill-row">${esc(g.title)}<strong>${duration(state.stats.skills[g.id])}</strong></div>`).join("")}</div>`
+      <div class="panel-head bottom-heading"><h2>Ваш опыт по направлениям</h2></div><p class="small muted">Фактическое время из дневника, без перерывов. Оно не заменяет оценку руководителя.</p><div class="guide-progress">${state.guides.map((g) => `<div class="skill-row">${esc(g.title)}<strong>${duration(state.stats.skills[g.id])}</strong></div>`).join("")}</div>`
     );
   }
   function reportsPage() {
@@ -384,7 +529,7 @@
         "Отчёты",
         "От записей в дневнике — к документу, который можно распечатать.",
       ) +
-      `<div class="split"><section class="panel report-preview"><div class="panel-head"><h2>Дневник за период</h2>${icon("reports")}</div><form class="filters" id="report-filters"><label class="field"><span>С даты</span><input type="date" name="from" value="${filters.from}"></label><label class="field"><span>По дату</span><input type="date" name="to" value="${filters.to}"></label><button class="btn secondary" type="submit">Применить</button></form><div class="report-line"><span>Студент</span><strong>${esc(p.name || "Не заполнено")}</strong></div><div class="report-line"><span>Группа</span><strong>${esc(p.group || "Не заполнено")}</strong></div><div class="report-line"><span>Место практики</span><strong>${esc(p.organization || "Не заполнено")}</strong></div><div class="report-line"><span>Период отчёта</span><strong>${filters.from ? dayText(filters.from) : "Все даты"} — ${filters.to ? dayText(filters.to) : "Все даты"}</strong></div><div class="report-total"><div><span class="small muted">Учтено по дневнику</span><br><strong>${duration(total)}</strong></div><span class="tag">Записей: ${state.entries.length}</span></div>
+      `<div class="split"><section class="panel report-preview"><div class="panel-head"><h2>Дневник за период</h2>${icon("reports")}</div><form class="filters" id="report-filters"><label class="field"><span>С даты</span><input type="date" name="from" value="${filters.from}"></label><label class="field"><span>По дату</span><input type="date" name="to" value="${filters.to}"></label><button class="btn secondary" type="submit">Применить</button></form><div class="report-line"><span>Студент</span><strong>${esc(p.name || "Не заполнено")}</strong></div><div class="report-line"><span>Группа</span><strong>${esc(p.group || "Не заполнено")}</strong></div><div class="report-line"><span>Место практики</span><strong>${esc(p.organization || "Не заполнено")}</strong></div><div class="report-line"><span>Период отчёта</span><strong>${filters.from ? dayText(filters.from) : "Все даты"} — ${filters.to ? dayText(filters.to) : "Все даты"}</strong></div><div class="report-total"><div><span class="small muted">Учтено по дневнику · ${state.profile.hour_minutes || 60} минут в часе</span><br><strong>${credited(total)} ${unitLabel()}</strong><br><span class="small muted">Фактически: ${duration(total)}</span></div><span class="tag">Записей: ${state.entries.length}</span></div>
       <div class="actions">${link("Открыть для печати", endpoint("report", reportQuery), "", "reports")}${link("Скачать CSV", endpoint("csv", reportQuery), "secondary", "download")}</div>
       ${!p.name || !p.group ? `<p class="note">Для полного отчёта заполните ФИО и группу в <a href="/settings.html">настройках практики</a>.</p>` : ""}
       ${!state.entries.length ? '<p class="note">Пока нет записей за выбранный период. Добавьте рабочий день в дневник или выберите другие даты.</p>' : ""}</section>
@@ -400,12 +545,222 @@
         "Настройки практики",
         "Ваши данные, план часов и резервное копирование.",
       ) +
-      `<div class="settings-grid"><form class="panel settings-form" id="profile-form" data-revision="${state.revision}"><h2>О практике</h2><p>План часов и сроки уточните у руководителя. Эти данные попадут в печатный дневник.</p><div class="form-grid">${profileField("name", "ФИО студента", "text", true)}${profileField("group", "Группа")}${profileField("specialty", "Специальность")}${profileField("organization", "Место практики", "text", true)}${profileField("supervisor", "Руководитель", "text", true)}${profileField("start_date", "Начало практики", "date")}${profileField("end_date", "Конец практики", "date")}${profileField("target_hours", "План часов", "number", true)}</div><div class="error" role="alert" hidden></div><div class="form-actions"><button class="btn" type="submit">Сохранить настройки</button></div></form>
+      `<div class="settings-grid"><form class="panel settings-form" id="profile-form" data-revision="${state.revision}"><h2>О практике</h2><p>План часов и сроки уточните у руководителя. Эти данные попадут в печатный дневник.</p><div class="form-grid">${profileField("name", "ФИО студента", "text", true)}${profileField("group", "Группа")}${profileField("specialty", "Специальность")}${profileField("organization", "Место практики", "text", true)}${profileField("supervisor", "Руководитель", "text", true)}${profileField("start_date", "Начало практики", "date")}${profileField("end_date", "Конец практики", "date")}${profileField("target_hours", "План часов", "number")}<label class="field"><span>Длительность часа</span><select name="hour_minutes"><option value="60" ${state.profile.hour_minutes !== 45 ? "selected" : ""}>60 минут · астрономический</option><option value="45" ${state.profile.hour_minutes === 45 ? "selected" : ""}>45 минут · академический</option></select><small>Уточните единицу у руководителя. Фактическое время записей не меняется.</small></label></div><div class="error" role="alert" hidden></div><div class="form-actions"><button class="btn" type="submit">Сохранить настройки</button></div></form>
       <div class="settings-stack"><section class="panel"><h2>Внешний вид</h2><p class="small muted">Выберите удобную тему. Настройка сохранится в этом браузере.</p><div class="theme-choice">${btn("Светлая", "light", "secondary", "sun")}${btn("Тёмная", "dark", "secondary", "moon")}</div></section>
       <section class="panel backup-panel"><h2>Резервная копия</h2><p>Скачайте файл с задачами, дневником и настройками. Рекомендуем делать копию перед переносом проекта.</p>${link("Скачать JSON-копию", endpoint("backup"), "secondary", "download")}<hr><h3>Восстановить из файла</h3><p>После проверки файла вы увидите состав копии и сможете подтвердить замену. Текущая версия дополнительно сохранится в папке storage/backups.</p><label class="field file-field"><span>Файл резервной копии (.json, до 2 МБ)</span><input id="restore-file" type="file" accept=".json,application/json"></label>${btn("Проверить файл", "restore", "secondary")}<p class="small">Режим копии должен совпадать с текущим: <strong>${mode === "demo" ? "учебный пример" : "личные записи"}</strong>.</p></section>
       <section class="panel"><h2>Хранение данных</h2><p class="small muted">Записи сохраняются на компьютере, где запущен сервер. Для сохранения нужна работающая команда py server.py. Интернет для работы не требуется.</p><p class="small muted">Приложение рассчитано на одного пользователя. Не размещайте личную базу в открытом доступе.</p></section></div></div>`
     );
   }
+  const valuesOf = (form) => Object.fromEntries(new FormData(form));
+  function rememberForm(form) {
+    form.dataset.initial = JSON.stringify(valuesOf(form));
+    form.dataset.source = form.dataset.initial;
+  }
+  const dirty = (form) =>
+    form &&
+    form.dataset.initial &&
+    JSON.stringify(valuesOf(form)) !== form.dataset.initial;
+  const draftKey = (form) => `praktikum:draft:${mode}:${form.id}`;
+  function storeDraft(form) {
+    if (
+      !form ||
+      writing ||
+      form.dataset.id ||
+      !["task-form", "entry-form"].includes(form.id)
+    )
+      return;
+    try {
+      const values = valuesOf(form);
+      if (!values.title?.trim() && !values.description?.trim()) {
+        sessionStorage.removeItem(draftKey(form));
+        return;
+      }
+      sessionStorage.setItem(
+        draftKey(form),
+        JSON.stringify({ version: 1, values }),
+      );
+    } catch {
+      /* Предупреждение при уходе работает и без хранилища браузера. */
+    }
+  }
+  function clearDraft(form) {
+    if (!form.dataset.id)
+      try {
+        sessionStorage.removeItem(draftKey(form));
+      } catch {}
+  }
+  function restoreDraft(form, requestedDate) {
+    try {
+      const saved = JSON.parse(
+        sessionStorage.getItem(draftKey(form)) || "null",
+      );
+      if (
+        saved?.version !== 1 ||
+        !saved.values ||
+        typeof saved.values !== "object"
+      )
+        return;
+      if (requestedDate && saved.values.date !== requestedDate) return;
+      for (const [name, value] of Object.entries(saved.values)) {
+        const control = form.elements.namedItem(name);
+        if (control && typeof value === "string" && value.length <= 5000)
+          control.value = value;
+      }
+      form.insertAdjacentHTML(
+        "afterbegin",
+        `<aside class="note draft-notice">Восстановлен черновик из этой вкладки. Он ещё не сохранён в дневнике или задачах. <button type="button" class="text-button" data-action="discard-draft">Очистить черновик</button></aside>`,
+      );
+    } catch {}
+  }
+  function activeDirtyForm() {
+    return [
+      ...document.querySelectorAll("#modal[open] form,#profile-form"),
+    ].find(dirty);
+  }
+  async function allowLeave(form = activeDirtyForm()) {
+    if (writing) {
+      toast("Дождитесь окончания сохранения.");
+      return false;
+    }
+    if (!dirty(form)) return true;
+    storeDraft(form);
+    const canRestore =
+      !form.dataset.id && ["task-form", "entry-form"].includes(form.id);
+    return confirmAction(
+      "Есть несохранённые изменения",
+      canRestore
+        ? "Закрыть форму? Текст новой записи останется в черновике этой вкладки до её закрытия. В базу он не записан."
+        : "Покинуть форму? Изменения этой записи ещё не сохранены и будут потеряны.",
+      "Продолжить без сохранения",
+    );
+  }
+  async function closeModal() {
+    const form = $("form", $("#modal"));
+    if (await allowLeave(form)) $("#modal").close();
+  }
+  function recordValues(record, form) {
+    return Object.fromEntries(
+      Object.keys(valuesOf(form)).map((name) => [
+        name,
+        String(record[name] ?? ""),
+      ]),
+    );
+  }
+  function applyValues(form, values) {
+    for (const [name, value] of Object.entries(values)) {
+      const control = form.elements.namedItem(name);
+      if (control) control.value = value;
+    }
+  }
+  function formError(form, message, actions = "") {
+    const box = $(".error", form);
+    box.innerHTML = `${esc(message)}${actions ? `<div class="actions">${actions}</div>` : ""}`;
+    box.hidden = false;
+    box.scrollIntoView({ block: "nearest" });
+  }
+  async function recoverConflict(form) {
+    if (writing) return;
+    writing = true;
+    try {
+      const fresh = await request("state");
+      state = fresh;
+      const id = Number(form.dataset.id);
+      const record =
+        form.id === "profile-form"
+          ? fresh.profile
+          : (form.id === "task-form" ? fresh.tasks : fresh.entries).find(
+              (r) => r.id === id,
+            );
+      if (id && !record) {
+        formError(
+          form,
+          "Эта запись удалена в другой вкладке. Ваш текст остался в форме. Можно сохранить его как новую запись.",
+          btn("Сохранить как новую", "conflict-copy", "small secondary"),
+        );
+        form._latest = { revision: fresh.revision, values: null };
+        return;
+      }
+      if (!id && form.id !== "profile-form") {
+        form.dataset.revision = fresh.revision;
+        formError(
+          form,
+          "Актуальные данные загружены. Ваш текст сохранён в форме; можно повторить сохранение.",
+        );
+        return;
+      }
+      const base = JSON.parse(form.dataset.source || "{}"),
+        mine = valuesOf(form),
+        latest = recordValues(record, form);
+      const conflicts = Object.keys(mine).filter(
+        (key) =>
+          mine[key] !== base[key] &&
+          latest[key] !== base[key] &&
+          mine[key] !== latest[key],
+      );
+      form._latest = { revision: fresh.revision, values: latest };
+      if (conflicts.length) {
+        const labels = {
+          title: "Название",
+          description: "Описание",
+          status: "Статус",
+          priority: "Приоритет",
+          date: "Дата",
+          start_time: "Начало",
+          end_time: "Окончание",
+          break_minutes: "Перерыв",
+          skill: "Направление",
+          task_id: "Задача",
+          name: "ФИО",
+          group: "Группа",
+          target_hours: "План часов",
+          hour_minutes: "Длительность часа",
+        };
+        formError(
+          form,
+          "В другой вкладке изменены те же поля. Ваш вариант остаётся в форме. Выберите, какую версию продолжить.",
+          btn(
+            "Открыть актуальную версию",
+            "conflict-current",
+            "small secondary",
+          ) + btn("Оставить мой вариант", "conflict-keep", "small secondary"),
+        );
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.textContent = "Что сейчас сохранено в базе";
+        details.append(summary);
+        for (const key of conflicts) {
+          const paragraph = document.createElement("p");
+          paragraph.textContent = `${labels[key] || key}: ${latest[key] || "Не заполнено"}`;
+          details.append(paragraph);
+        }
+        $(".error", form).append(details);
+      } else {
+        for (const key of Object.keys(mine))
+          if (mine[key] === base[key]) mine[key] = latest[key];
+        applyValues(form, mine);
+        form.dataset.revision = fresh.revision;
+        form.dataset.source = JSON.stringify(latest);
+        form.dataset.initial = JSON.stringify(latest);
+        formError(
+          form,
+          "Актуальные данные загружены. Ваши изменения сохранены в форме. Проверьте поля и повторите сохранение.",
+        );
+      }
+    } catch (error) {
+      formError(
+        form,
+        error.message,
+        btn(
+          "Загрузить актуальные данные",
+          "recover-conflict",
+          "small secondary",
+        ),
+      );
+    } finally {
+      writing = false;
+    }
+  }
+
   function openModal(title, body) {
     const modal = $("#modal");
     modal.innerHTML = `<div class="dialog-head"><h2 id="modal-title">${title}</h2><button class="icon-button" data-action="close" aria-label="Закрыть окно">${icon("close")}</button></div>${body}`;
@@ -443,10 +798,23 @@
           "",
         )}</select></label><label class="field"><span>Направление</span><select name="skill">${skillOptions(t.skill)}</select></label></div><div class="error" role="alert" hidden></div><div class="form-actions">${btn("Отмена", "close", "secondary")}<button class="btn" type="submit">${id ? "Сохранить изменения" : "Создать задачу"}</button></div></form>`,
     );
+    const form = $("#task-form");
+    rememberForm(form);
+    if (!id) restoreDraft(form);
   }
-  function showEntry(id) {
+  function showEntry(id, requestedDate = "") {
+    const selectedDate = requestedDate || state.today;
+    if (!id) {
+      const existing = state.entries.find(
+        (entry) => entry.date === selectedDate,
+      );
+      if (existing) {
+        id = existing.id;
+        toast("Запись за этот день уже есть. Можно дополнить её.");
+      }
+    }
     const e = state.entries.find((e) => e.id === id) || {
-      date: state.today,
+      date: selectedDate,
       start_time: "09:00",
       end_time: "15:30",
       break_minutes: 30,
@@ -458,6 +826,9 @@
       id ? "Редактировать запись" : "Записать рабочий день",
       `<p class="dialog-intro">Одна запись на день. Время перерыва не включается в отработанные часы.</p><form id="entry-form" data-id="${id || ""}" data-revision="${state.revision}"><div class="form-grid"><label class="field"><span>Дата *</span><input type="date" name="date" required value="${e.date}" max="${state.today}"></label><label class="field"><span>Перерыв, минут *</span><input type="number" name="break_minutes" required min="0" max="720" step="1" value="${e.break_minutes}"></label><label class="field"><span>Начало *</span><input type="time" name="start_time" required value="${e.start_time}"></label><label class="field"><span>Окончание *</span><input type="time" name="end_time" required value="${e.end_time}"></label><label class="field full"><span>Выполненная работа *</span><textarea name="description" required maxlength="5000" placeholder="Что сделано и какой результат получен?">${esc(e.description)}</textarea></label><label class="field"><span>Направление</span><select name="skill">${skillOptions(e.skill)}</select></label><label class="field"><span>Связанная задача</span><select name="task_id"><option value="">Не связывать</option>${state.allTasks.map((t) => `<option value="${t.id}" ${e.task_id === t.id ? "selected" : ""}>${esc(t.title)}</option>`).join("")}</select></label></div><div class="error" role="alert" hidden></div><div class="form-actions">${btn("Отмена", "close", "secondary")}<button class="btn" type="submit">${id ? "Сохранить изменения" : "Сохранить день"}</button></div></form>`,
     );
+    const form = $("#entry-form");
+    rememberForm(form);
+    if (!id) restoreDraft(form, requestedDate);
   }
   function showGuide(id) {
     const g = state.guides.find((g) => g.id === id);
@@ -483,26 +854,45 @@
   }
   async function write(resource, method, data, revision, form) {
     if (writing) return false;
+    if (!state || state.mode !== mode) {
+      const message =
+        "Рабочий режим не загружен. Обновите данные перед сохранением.";
+      if (form) formError(form, message);
+      else showLoadError(message, false);
+      return false;
+    }
     writing = true;
-    const buttons = form ? [...form.querySelectorAll("button")] : [];
-    buttons.forEach((b) => (b.disabled = true));
+    const controls = form
+      ? [...form.querySelectorAll("button,input,textarea,select")]
+      : [];
+    const previous = controls.map((control) => control.disabled);
+    controls.forEach((control) => (control.disabled = true));
     const errorBox = form && $(".error", form);
     if (errorBox) errorBox.hidden = true;
     try {
       await request(resource, method, data, revision);
       return true;
     } catch (error) {
-      if (errorBox) {
-        errorBox.textContent = error.message;
-        errorBox.hidden = false;
-        errorBox.scrollIntoView({ block: "nearest" });
-      } else toast(error.message);
+      if (errorBox)
+        formError(
+          form,
+          error.message,
+          error.code === "revision_conflict"
+            ? btn(
+                "Загрузить актуальные данные",
+                "recover-conflict",
+                "small secondary",
+              )
+            : "",
+        );
+      else showLoadError(error.message, false);
       return false;
     } finally {
-      buttons.forEach((b) => (b.disabled = false));
+      controls.forEach((control, i) => (control.disabled = previous[i]));
       writing = false;
     }
   }
+
   async function remove(resource, id) {
     const revision = state.revision;
     const message =
@@ -557,6 +947,31 @@
     }
   }
   document.addEventListener("click", async (event) => {
+    const anchor = event.target.closest("a[href]");
+    if (
+      anchor &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey &&
+      anchor.target !== "_blank" &&
+      !anchor.hasAttribute("download")
+    ) {
+      const destination = new URL(anchor.href, location.href);
+      if (
+        destination.origin === location.origin &&
+        destination.pathname !== location.pathname &&
+        !destination.pathname.startsWith("/api/")
+      ) {
+        if (writing || activeDirtyForm()) {
+          event.preventDefault();
+          if (await allowLeave()) {
+            leaving = true;
+            location.assign(anchor.href);
+          }
+          return;
+        }
+      }
+    }
     const element = event.target.closest("[data-action]");
     if (!element || element.disabled) return;
     const action = element.dataset.action,
@@ -575,25 +990,23 @@
       );
     }
     if (action === "mode") {
-      if (writing) return;
-      mode = mode === "personal" ? "demo" : "personal";
+      if (!(await allowLeave())) return;
+      element.disabled = true;
+      $("#main").inert = true;
       try {
-        localStorage.setItem("praktikum-mode", mode);
-      } catch {}
-      Object.keys(filters).forEach(
-        (k) => (filters[k] = k === "sort" ? "new" : ""),
-      );
-      limit = 24;
-      updateMode();
-      await load();
+        await load(false, mode === "personal" ? "demo" : "personal");
+      } finally {
+        element.disabled = false;
+        $("#main").inert = false;
+      }
     }
-    if (action === "retry") await load();
+    if (action === "retry") await load(["tasks", "diary"].includes(page));
     if (!state) return;
     if (action === "new-task") showTask();
     if (action === "edit-task") showTask(id);
     if (action === "new-entry") showEntry();
     if (action === "edit-entry") showEntry(id);
-    if (action === "close") $("#modal").close();
+    if (action === "close") await closeModal();
     if (action === "delete-task") await remove("tasks", id);
     if (action === "delete-entry") await remove("entries", id);
     if (action === "guide") showGuide(element.dataset.guide);
@@ -601,20 +1014,70 @@
       const skill = $("#modal").dataset.skill;
       showTask();
       $("#task-form select[name=skill]").value = skill;
+      storeDraft($("#task-form"));
+    }
+    if (action === "discard-draft") {
+      const form = element.closest("form");
+      const isTask = form.id === "task-form";
+      const date = form.elements.namedItem("date")?.value;
+      clearDraft(form);
+      isTask ? showTask() : showEntry(undefined, date);
+    }
+    if (action === "recover-conflict")
+      await recoverConflict(element.closest("form"));
+    if (
+      ["conflict-current", "conflict-keep", "conflict-copy"].includes(action)
+    ) {
+      const form = element.closest("form"),
+        latest = form._latest;
+      if (!latest) return;
+      if (action === "conflict-current") {
+        if (
+          !(await confirmAction(
+            "Открыть сохранённую версию?",
+            "Несохранённый вариант в форме будет заменён данными из базы.",
+            "Открыть версию из базы",
+          ))
+        )
+          return;
+        applyValues(form, latest.values);
+        rememberForm(form);
+      }
+      if (action === "conflict-keep") {
+        if (
+          !(await confirmAction(
+            "Оставить ваш вариант?",
+            "После повторного сохранения ваши значения заменят изменённые поля в базе. Проверьте их перед сохранением.",
+            "Оставить мой вариант",
+          ))
+        )
+          return;
+        form.dataset.source = JSON.stringify(latest.values);
+        form.dataset.initial = JSON.stringify(latest.values);
+      }
+      if (action === "conflict-copy") {
+        form.dataset.id = "";
+        storeDraft(form);
+      }
+      form.dataset.revision = latest.revision;
+      formError(
+        form,
+        "Версия выбрана. Проверьте поля и нажмите кнопку сохранения.",
+      );
     }
     if (action === "toggle-task") {
-      const t = state.tasks.find((t) => t.id === id);
+      const task = state.tasks.find((t) => t.id === id);
       if (
-        t &&
+        task &&
         (await write(
           `tasks/${id}`,
           "PUT",
-          { ...t, status: t.status === "done" ? "todo" : "done" },
+          { ...task, status: task.status === "done" ? "todo" : "done" },
           state.revision,
         ))
       ) {
         toast(
-          t.status === "done"
+          task.status === "done"
             ? "Задача возвращена в планы"
             : "Задача завершена",
         );
@@ -622,10 +1085,13 @@
       }
     }
     if (action === "status") {
+      clearTimeout(debounceTimer);
       filters.status = element.dataset.status;
       document
-        .querySelectorAll("[data-action=status]")
-        .forEach((b) => b.setAttribute("aria-pressed", String(b === element)));
+        .querySelectorAll('[data-action="status"]')
+        .forEach((button) =>
+          button.setAttribute("aria-pressed", String(button === element)),
+        );
       limit = 24;
       await load(true);
     }
@@ -635,20 +1101,47 @@
         page === "tasks" ? taskResults() : diaryResults();
     }
     if (action === "reset-filters") {
+      clearTimeout(debounceTimer);
       Object.keys(filters).forEach(
-        (k) => (filters[k] = k === "sort" ? "new" : ""),
+        (key) => (filters[key] = key === "sort" ? "new" : ""),
       );
       limit = 24;
       await load();
     }
-    if (action === "restore") await restoreBackup();
+    if (action === "restore") {
+      if (await allowLeave()) await restoreBackup();
+    }
+    if (["calendar-prev", "calendar-next", "calendar-today"].includes(action)) {
+      const date = new Date(`${calendarData.month}-01T12:00:00`);
+      let requestedMonth;
+      if (action === "calendar-today") requestedMonth = state.today.slice(0, 7);
+      else {
+        date.setMonth(date.getMonth() + (action === "calendar-prev" ? -1 : 1));
+        requestedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+      await changeMonth(requestedMonth);
+    }
+    if (action === "calendar-day")
+      showEntry(id || undefined, element.dataset.date);
   });
   document.addEventListener("submit", async (event) => {
     const form = event.target;
     if (form.method === "dialog") return;
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(form));
+    const data = valuesOf(form);
+    if (form.id === "calendar-filter") {
+      await changeMonth(data.month);
+      return;
+    }
     if (["task-filters", "diary-filters", "report-filters"].includes(form.id)) {
+      clearTimeout(debounceTimer);
+      if (data.from && data.to && data.from > data.to) {
+        showLoadError(
+          "Период не применён: дата начала позже даты окончания. Исправьте даты и повторите.",
+          false,
+        );
+        return;
+      }
       Object.assign(filters, data);
       limit = 24;
       await load(form.id !== "report-filters");
@@ -656,6 +1149,7 @@
     }
     if (form.id === "task-form" || form.id === "entry-form") {
       const id = form.dataset.id;
+      storeDraft(form);
       if (form.id === "entry-form") {
         data.break_minutes = Number(data.break_minutes);
         data.task_id = data.task_id ? Number(data.task_id) : null;
@@ -670,6 +1164,8 @@
           form,
         )
       ) {
+        clearDraft(form);
+        rememberForm(form);
         $("#modal").close();
         toast(
           resource === "tasks"
@@ -681,13 +1177,17 @@
     }
     if (form.id === "profile-form") {
       data.target_hours = Number(data.target_hours);
+      data.hour_minutes = Number(data.hour_minutes);
       if (await write("profile", "PUT", data, form.dataset.revision, form)) {
+        rememberForm(form);
         toast("Настройки сохранены");
         await load();
       }
     }
   });
   document.addEventListener("input", (event) => {
+    const editor = event.target.closest("#task-form,#entry-form");
+    if (editor) storeDraft(editor);
     const form = event.target.closest("#task-filters");
     if (!form || event.target.name !== "q") return;
     filters.q = event.target.value;
@@ -696,11 +1196,26 @@
     debounceTimer = setTimeout(() => load(true), 300);
   });
   document.addEventListener("change", (event) => {
+    const editor = event.target.closest("#task-form,#entry-form");
+    if (editor) storeDraft(editor);
     const form = event.target.closest("#task-filters");
     if (!form || event.target.name === "q") return;
     filters[event.target.name] = event.target.value;
     limit = 24;
+    clearTimeout(debounceTimer);
     load(true);
+  });
+  $("#modal").addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeModal();
+  });
+  window.addEventListener("beforeunload", (event) => {
+    if (leaving) return;
+    const form = activeDirtyForm();
+    if (!form && !writing) return;
+    storeDraft(form);
+    event.preventDefault();
+    event.returnValue = "";
   });
   window.addEventListener("storage", (event) => {
     if (
