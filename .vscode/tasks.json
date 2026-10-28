@@ -2,6 +2,18 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "СОБРАНО: JavaScript API + SQLite",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "online/server.mjs"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "СОБРАНО: Python API",
       "type": "process",
       "command": "python",
@@ -10,6 +22,25 @@
       ],
       "options": {
         "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "windows": {
+        "command": "py"
+      }
+    },
+    {
+      "label": "СОБРАНО: программа расчёта сборки",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-B",
+        "desktop_app.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "windows": {
+        "command": "py"
       },
       "problemMatcher": []
     },
@@ -28,7 +59,10 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "py"
+      }
     },
     {
       "label": "СОБРАНО: тесты Python",
@@ -45,15 +79,17 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "py"
+      }
     },
     {
       "label": "СОБРАНО: тесты JavaScript",
       "type": "process",
       "command": "node",
       "args": [
-        "--test",
-        "tests/*.test.cjs"
+        "tools/test-javascript.cjs"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

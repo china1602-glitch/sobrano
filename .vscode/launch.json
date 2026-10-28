@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "СОБРАНО: онлайн-бэкенд Node.js + SQLite",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/online/server.mjs",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "name": "СОБРАНО: запустить Python-сервер",
       "type": "debugpy",
       "request": "launch",
@@ -13,6 +24,18 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "SOBRANO_DEBUG": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "СОБРАНО: программа расчёта сборки",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/desktop_app.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
         "PYTHONDONTWRITEBYTECODE": "1"
       },
       "console": "integratedTerminal",

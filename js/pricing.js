@@ -1,16 +1,23 @@
 /* Снимки магазинных цен хранятся отдельно от учебных оценок. */
-(function (root) {
+(function (root, create) {
   "use strict";
-  const raw = Array.isArray(root.SOBRANO_OFFERS) ? root.SOBRANO_OFFERS : [];
+  const api = create(root.SOBRANO_OFFERS);
+  api.create = create;
+  root.SobranoPricing = api;
+  if (typeof module === "object" && module.exports) module.exports = api;
+})(typeof window === "object" ? window : globalThis, function createPricing(input) {
+  "use strict";
+  const raw = Array.isArray(input) ? input : [];
   const offers = raw.filter(
     (offer) =>
+      offer !== null && typeof offer === "object" &&
       /^p\d+$/.test(offer.productId) &&
       offer.currency === "KZT" &&
       Number.isFinite(offer.price) &&
       offer.price > 0 &&
       /^https:\/\//.test(offer.url) &&
       Number.isFinite(Date.parse(offer.checkedAt)),
-  );
+  ).map((offer) => ({ ...offer }));
   function offersFor(product) {
     return offers.filter((offer) => offer.productId === product.id);
   }
@@ -46,7 +53,5 @@
     }
     return { value, snapshots, estimates };
   }
-  root.SobranoPricing = { offers, offersFor, price, budget };
-  if (typeof module === "object" && module.exports)
-    module.exports = root.SobranoPricing;
-})(typeof window === "object" ? window : globalThis);
+  return { offers, offersFor, price, budget };
+});

@@ -207,8 +207,9 @@ def build_parts(build, products):
 
 def filter_builds(builds, products, prices, task="", max_price=None):
     """Подбор готовых конфигураций по задаче и той же цене, что в бюджете."""
-    maximum = _number(max_price)
-    # Пустое поле и 0 в форме готовых сборок означают «без ограничения».
-    if maximum is not None and maximum <= 0:
-        maximum = None
+    # Пустое поле не ограничивает подбор, введённый 0 означает бюджет 0 ₸.
+    empty = max_price is None or isinstance(max_price, str) and not max_price.strip()
+    maximum = None if empty else _number(max_price)
+    if not empty and (maximum is None or maximum < 0 or maximum != int(maximum) or maximum > 9007199254740991):
+        raise ValueError("Бюджет должен быть неотрицательным целым числом тенге")
     return [build for build in builds if (not task or build[1] == task) and (maximum is None or budget(build_parts(build, products), products, prices)["value"] <= maximum)]

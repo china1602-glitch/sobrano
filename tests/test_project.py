@@ -30,7 +30,7 @@ class ProjectTests(unittest.TestCase):
                 result[key] = value
             return result
         for file in ROOT.rglob("*.json"):
-            if ".git" in file.parts:
+            if any(part in {".git", "node_modules", "dist", "instance", ".wrangler", ".sites-runtime"} for part in file.parts):
                 continue
             with self.subTest(file=file.relative_to(ROOT)):
                 json.loads(file.read_text(encoding="utf-8-sig"), object_pairs_hook=unique,
@@ -65,7 +65,11 @@ class ProjectTests(unittest.TestCase):
             target = base / unquote(url.path)
             self.assertTrue(target.is_file(), str(base.relative_to(ROOT)) + ": " + ref)
         pages = list(ROOT.glob("*.html"))
-        self.assertEqual(len(pages), 9)
+        self.assertEqual({page.name for page in pages}, {
+            "index.html", "catalog.html", "builds.html", "builder.html",
+            "compare.html", "favorites.html", "about.html", "product.html",
+            "build.html", "account.html",
+        })
         for page in pages:
             parser = References()
             parser.feed(page.read_text(encoding="utf-8"))
@@ -90,7 +94,7 @@ class ProjectTests(unittest.TestCase):
 
     def test_documentation_local_links_exist(self):
         for file in ROOT.rglob("*.md"):
-            if ".git" in file.parts:
+            if any(part in {".git", "node_modules", "dist", "instance", ".wrangler", ".sites-runtime"} for part in file.parts):
                 continue
             for ref in re.findall(r"\]\(([^)]+)\)", file.read_text(encoding="utf-8")):
                 url = urlsplit(ref)

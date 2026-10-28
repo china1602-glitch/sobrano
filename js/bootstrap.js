@@ -1,4 +1,4 @@
-/* Выбор режима и загрузка данных: Python API локально, JSON на GitHub Pages. */
+/* Режимы: онлайн API, локальный Python API и статические JSON. */
 (function (root) {
   "use strict";
 
@@ -77,15 +77,15 @@
       new URL("runtime.json", siteURL),
       "Режим сайта",
     );
-    if (!object(runtime) || !["static", "python"].includes(runtime.backend)) {
-      throw new Error("Режим сайта не настроен: ожидается static или python.");
+    if (!object(runtime) || !["static", "python", "server"].includes(runtime.backend)) {
+      throw new Error("Режим сайта не настроен: ожидается static, python или server.");
     }
     selectedBackend = runtime.backend;
     root.SOBRANO_RUNTIME = Object.freeze({ ...runtime, baseURL: siteURL.href });
 
     let catalog;
     let offers;
-    if (runtime.backend === "python") {
+    if (runtime.backend === "python" || runtime.backend === "server") {
       const apiBase = new URL(runtime.apiBase || "api/", siteURL);
       if (
         apiBase.origin !== siteURL.origin ||
@@ -98,7 +98,7 @@
       if (!apiBase.pathname.endsWith("/")) apiBase.pathname += "/";
       const data = await readJSON(
         new URL("catalog", apiBase),
-        "Каталог Python API",
+        runtime.backend === "python" ? "Каталог Python API" : "Каталог серверного API",
       );
       validateCatalog(data);
       if (
@@ -106,7 +106,7 @@
         !object(data.prices) ||
         !object(data.buildResults)
       ) {
-        throw new Error("Python API вернул неполные данные цен или сборок.");
+        throw new Error("Серверное API вернуло неполные данные цен или сборок.");
       }
       catalog = {
         products: data.products,
@@ -161,7 +161,9 @@
     help.textContent =
       selectedBackend === "python"
         ? "Проверьте, что Python-сервер запущен, затем повторите загрузку."
-        : "Проверьте подключение и доступность файлов сайта, затем повторите загрузку.";
+        : selectedBackend === "server"
+          ? "Проверьте подключение. Если ошибка повторится, сервер временно недоступен."
+          : "Проверьте подключение и доступность файлов сайта, затем повторите загрузку.";
     const retry = document.createElement("button");
     retry.type = "button";
     retry.textContent = "Повторить загрузку";

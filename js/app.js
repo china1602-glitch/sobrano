@@ -1,5 +1,5 @@
 /* СОБРАНО: страницы, выбор пользователя и обработчики интерфейса.
-   В локальном режиме каталог и расчёты приходят из Python API.
+   В онлайн и локальном серверном режиме расчёты приходят из HTTP API.
    На GitHub Pages используются клиентские модули статического режима. */
 window.SOBRANO_APP_READY = (async function () {
   "use strict";
@@ -75,6 +75,18 @@ window.SOBRANO_APP_READY = (async function () {
     }
   }
   let S = { fav: [], cmp: [], parts: {} };
+  let savedBuild = null,
+    savedPartsKey = "",
+    incomingSavedError = "",
+    saveAttempt = null,
+    serverBusy = false,
+    serverDialogVersion = 0;
+  const ownedBuilds = new Map();
+  let accountMode = "login",
+    accountBusy = false,
+    accountError = "",
+    accountMessage = "",
+    accountRequest = 0;
   let startupStorageText = null,
     startupStorageChanged = false;
   const trackStartupStorage = (event) => {
@@ -108,7 +120,7 @@ window.SOBRANO_APP_READY = (async function () {
     counters();
   }
   // Полученная по ссылке сборка становится текущей и переживает переходы между страницами.
-  if (page === "builder" && params.has("parts")) {
+  if (page === "builder" && !params.has("saved") && params.has("parts")) {
     const payload = params.get("parts");
     const tokens = payload.split(",");
     const validLink =
@@ -125,6 +137,19 @@ window.SOBRANO_APP_READY = (async function () {
       S.parts = Core.parseParts(payload);
       incomingApply = true;
     } else incomingError = true;
+  }
+  if (page === "builder" && params.has("saved")) {
+    try {
+      if (!Backend.savedAvailable)
+        throw new Error("Эта ссылка открывает запись из онлайн-базы. Откройте её на сайте с сервером; в статическом и локальном Python-режимах такой базы нет.");
+      const record = await Backend.saved.load(params.get("saved"));
+      savedBuild = { ...record, canEdit: record.canEdit === true };
+      savedPartsKey = Core.partsString(record.parts);
+      S.parts = { ...record.parts };
+      incomingApply = true;
+    } catch (error) {
+      incomingSavedError = error.message + " Ваш текущий состав оставлен без изменений.";
+    }
   }
   try {
     // Пока первый HTTP-запрос выполняется, другая вкладка может изменить состав.
@@ -229,7 +254,14 @@ window.SOBRANO_APP_READY = (async function () {
   }
   function configURL(parts = S.parts) {
     const url = new URL("builder.html", location.href);
-    url.searchParams.set("parts", Core.partsString(parts));
+    if (savedBuild && Core.partsString(parts) === savedPartsKey)
+      url.searchParams.set("saved", savedBuild.id);
+    else url.searchParams.set("parts", Core.partsString(parts));
+    return url;
+  }
+  function savedURL(id) {
+    const url = new URL("builder.html", location.href);
+    url.searchParams.set("saved", id);
     return url;
   }
   function syncBuilderURL() {
@@ -566,7 +598,7 @@ window.SOBRANO_APP_READY = (async function () {
         "Готовые сборки ПК",
         "Выберите состав под свою задачу и при необходимости замените компоненты.",
       ) +
-      `<form id="build-filters" class="build-filters"><label for="task">Назначение<select id="task" name="task"><option value="">Все задачи</option>${[...new Set(B.map((b) => b[1]))].map((task) => "<option>" + esc(task) + "</option>").join("")}</select></label><label for="budget">Бюджет до, ₸<input id="budget" name="budget" type="number" min="0" placeholder="Без ограничения"></label><button type="submit" class="btn secondary">Подобрать</button></form>
+      `<form id="build-filters" class="build-filters"><label for="task">Назначение<select id="task" name="task"><option value="">Все задачи</option>${[...new Set(B.map((b) => b[1]))].map((task) => "<option>" + esc(task) + "</option>").join("")}</select></label><label for="budget">Бюджет до, ₸<input id="budget" name="budget" type="number" min="0" max="9007199254740991" step="1" inputmode="numeric" placeholder="Без ограничения"></label><button type="submit" class="btn secondary">Подобрать</button></form>
       <p id="build-count" class="count-note" aria-live="polite"></p><div id="build-results" class="build-grid"></div>
       <p class="section info-note">Бюджет складывается из зафиксированных цен и расчётных оценок. Не включены периферия, операционная система, доставка и работа сборщика. Состав можно проверить и изменить в конфигураторе.</p>`;
     $("#task").value = params.get("task") || "";
@@ -575,8 +607,18 @@ window.SOBRANO_APP_READY = (async function () {
   }
   async function drawBuilds() {
     const requestVersion = ++buildsRequest;
+    const field = $("#budget");
+    field.setCustomValidity("");
     const task = $("#task").value,
-      max = Number($("#budget").value);
+      raw = field.value.trim(),
+      max = raw === "" ? null : Number(raw);
+    if (!field.checkValidity() || (max !== null && (!Number.isSafeInteger(max) || max < 0))) {
+      const message = "Введите корректный неотрицательный бюджет в целых тенге.";
+      field.setCustomValidity(message);
+      $("#build-count").textContent = "Проверьте бюджет";
+      $("#build-results").innerHTML = '<p class="warn" role="alert">' + esc(message) + "</p>";
+      return;
+    }
     let rows;
     try {
       rows = Backend.enabled
@@ -584,7 +626,7 @@ window.SOBRANO_APP_READY = (async function () {
         : B.filter(
             (b) =>
               (!task || b[1] === task) &&
-              (!max || budget(Core.buildParts(b)).value <= max),
+              (max === null || budget(Core.buildParts(b)).value <= max),
           );
     } catch (error) {
       if (requestVersion === buildsRequest) {
@@ -857,10 +899,16 @@ window.SOBRANO_APP_READY = (async function () {
     app.innerHTML =
       heading(
         "Конфигуратор ПК",
-        "Выберите комплектующие. Состав сохраняется в браузере, а ссылкой можно поделиться.",
+        Backend.savedAvailable
+          ? "Выберите комплектующие и сохраните состав на сервере, чтобы открыть его по ссылке на другом устройстве."
+          : "Выберите комплектующие. Состав сохраняется в браузере, а ссылкой можно поделиться.",
       ) +
       (incomingError
         ? '<p class="warn">Ссылка содержит некорректный состав. Ваша сохранённая сборка оставлена без изменений.</p>'
+        : "") +
+      (incomingSavedError ? '<p class="warn" role="alert">' + esc(incomingSavedError) + '</p>' : "") +
+      (Backend.savedAvailable
+        ? '<section class="server-build-tools" aria-label="Сохранение сборки"><div class="row"><button class="btn secondary" type="button" data-action="server-save">Сохранить на сервере</button><button class="btn secondary" type="button" data-action="server-my-builds">Мои сборки</button></div><p id="saved-state" class="caption" aria-live="polite"></p></section>'
         : "") +
       `<div class="builder-toolbar row"><a class="btn secondary small" href="builds.html">Начать с готовой сборки</a><span class="caption">Выбрано компонентов: <span id="selected-count">${Object.keys(S.parts).length}</span> из 8</span></div><div class="builder-layout"><div><div class="builder-list">${cats
         .map(
@@ -911,6 +959,15 @@ window.SOBRANO_APP_READY = (async function () {
       '<p class="caption section">Проверка ограничена известными параметрами. BIOS, QVL, разъёмы, крепления и достаточность охлаждения проверьте отдельно.</p><div class="stack"><button type="button" class="btn" data-action="share">Ссылка на сборку</button></div>';
     if ($("#selected-count"))
       $("#selected-count").textContent = Object.keys(S.parts).length;
+    const savedState = $("#saved-state");
+    if (savedState) {
+      const dirty = savedBuild && Core.partsString(S.parts) !== savedPartsKey;
+      savedState.textContent = savedBuild
+        ? (savedBuild.canEdit ? "Ваша сборка «" : "Открыта сборка «") + savedBuild.name + "». " +
+          (dirty ? "Текущие изменения ещё не сохранены в базе. " : "Этот состав сохранён на сервере. ") +
+          (savedBuild.canEdit ? "Можно обновить запись или сохранить новую копию." : "Вы можете сохранить собственную копию.")
+        : "Пока состав хранится в этом браузере. Нажмите «Сохранить на сервере», чтобы создать запись и постоянную ссылку.";
+    }
   }
   function updateSlot(c) {
     const select = $("#slot-" + c);
@@ -981,8 +1038,9 @@ window.SOBRANO_APP_READY = (async function () {
       <h2 id="prices">Как указаны цены</h2><p>В каталоге используются два вида цен. <strong>Зафиксированная цена</strong> — сумма из доступного снимка страницы конкретного магазина. Рядом указана дата фиксации, а в карточке модели есть источник и условия. Поисковый снимок страницы может отставать от магазина; наличие, город и действующую цену нужно уточнить у продавца.</p><p><strong>Расчётная цена</strong> — учебная оценка, записанная в наборе данных. Она не является предложением магазина. Новые магазинные цены не загружаются автоматически. Снимки старше 30 дней остаются в истории товара, но перестают участвовать в расчёте бюджета.</p><p>Оценка сборки — сумма цен её компонентов: снимков не старше 30 дней и расчётных оценок для остальных деталей. Цена без подтверждённого наличия остаётся снимком, а не обещанием продажи. В сумму не входят доставка, периферия, операционная система и услуги сборщика.</p>
       <h2>Зафиксированные предложения</h2><p>Сейчас сохранено ${offers.length} предложений для ${new Set(offers.map((o) => o.productId)).size} моделей. СОБРАНО не заявляет о партнёрстве с указанными магазинами.</p><ul>${offers.map((o) => '<li><a href="' + esc(o.url) + '" target="_blank" rel="noopener noreferrer">' + esc(o.store) + " — " + esc(P[Number(o.productId.slice(1))]?.name) + "</a>: " + money(o.price) + ", фиксация " + date(o.checkedAt) + ".</li>").join("")}</ul>
       <h2 id="data">Характеристики и совместимость</h2><p>Названия моделей реальны. Характеристики сокращены до основных параметров, часть значений пока не заполнена. Отсутствующее значение обозначается «Не указано». Для покупки проверяйте точный артикул и документацию производителя: разные исполнения одной модели могут отличаться.</p><p>Каталог и конфигуратор скрывают варианты, для которых обнаружен конфликт с выбранными деталями: сокеты, тип и объём памяти, число модулей, основные размеры и оценка мощности. Выбор работает в любом порядке. В каталоге можно отключить фильтр «Подходят к моей сборке», чтобы изучить все модели. Если части характеристик нет, вариант остаётся доступным. Недостающие данные указаны в общем результате проверки сборки, без повторяющихся пометок в списках и под деталями. В сохранённом составе конфликтная деталь остаётся видимой для замены. Проверка не заменяет сверку BIOS, QVL, разъёмов питания, креплений, достаточности охлаждения и геометрии.</p>
-      <h2>Сохранение и ссылки</h2><p>Избранное, сравнение и текущая сборка сохраняются в вашем браузере. При очистке данных браузера они удалятся. Ссылку на сборку можно открыть на другом устройстве; TXT-файл позволяет сохранить состав отдельно.</p>
-      <h2 id="photos">Фотографии и авторство</h2><p>Для точных моделей используются фотографии из указанных источников. Изображения линейки или исполнения другого производителя явно подписаны: объём памяти, число модулей, упаковка или внешний вид могут отличаться. Для референсной видеокарты есть пометка о версии. Если проверенного снимка нет, показан значок с подписью «Фото не добавлено». Фото корпуса в сборке показывает только корпус, а не собранный компьютер. Фотографии загружаются с внешних сайтов и требуют подключения к Интернету.</p><ul class="credit-list">${Media.credits()
+      <h2>Сохранение и ссылки</h2><p>Избранное, сравнение и текущий черновик сохраняются в браузере. При очистке данных браузера они удалятся. ${Backend.savedAvailable ? "Кнопка «Сохранить на сервере» создаёт запись в SQL-базе. Ссылку на неё можно открыть с другого устройства, когда доступен сервер." + (Backend.accountsAvailable ? " После входа записи принадлежат аккаунту: их можно изменять и удалять с любого браузера, где выполнен вход. Без входа доступ к редактированию связан с гостевой cookie этого браузера; при входе гостевые записи переходят в аккаунт." : " Доступ автора к редактированию связан с гостевой cookie этого браузера.") + " Общая ссылка открывает название и состав для чтения. Не указывайте личные данные в названии." : "В этом режиме сохранения в серверную базу нет; ссылка передаёт состав в адресе страницы."} TXT-файл позволяет сохранить состав отдельно.</p>
+      <h2>Серверные режимы</h2><p>${window.SOBRANO_RUNTIME.backend === "server" ? "На этой версии поиск, подбор, совместимость и бюджет обрабатывает онлайн-сервер на JavaScript. Сохранённые составы хранятся в базе, а интерфейс получает результаты HTTP-запросами." : window.SOBRANO_RUNTIME.backend === "python" ? "В этом локальном режиме HTTP-запросы обрабатывает Python-сервер. Он читает каталог из JSON и рассчитывает результаты." : "Эта статическая версия загружает JSON, а расчёты выполняет JavaScript в браузере. GitHub Pages не запускает серверный код."} Оконная программа Python является отдельным приложением и не запускается внутри сайта.</p>
+      <h2 id="photos">Фотографии и авторство</h2><p>Для точных моделей используются фотографии из указанных источников. Изображения линейки или исполнения другого производителя явно подписаны: объём памяти, число модулей, упаковка или внешний вид могут отличаться. Для референсной видеокарты есть пометка о версии. Если проверенного снимка нет, показан значок с подписью «Фото не добавлено». Фото корпуса в сборке показывает только корпус, а не собранный компьютер. Сохранённые в проекте фотографии доступны без Интернета. Остальные загружаются с внешних сайтов; при недоступности источника показано сообщение вместо фотографии.</p><ul class="credit-list">${Media.credits()
         .map(
           (x) =>
             "<li>" +
@@ -1019,6 +1077,269 @@ window.SOBRANO_APP_READY = (async function () {
       html;
     $("#details").showModal();
   }
+  function accountOwnershipNote() {
+    return Backend.accountsAvailable && Backend.auth.user
+      ? "Сборки сохраняются в вашем аккаунте. Войдите с тем же логином на другом устройстве, чтобы изменять их."
+      : Backend.accountsAvailable
+        ? 'Сейчас сборки принадлежат гостевой сессии этого браузера. <a href="account.html">Войдите или создайте аккаунт</a>, чтобы сохранить доступ с других устройств.'
+        : "Записи вашей гостевой сессии в этом браузере. Ссылка позволяет открыть состав на другом устройстве.";
+  }
+  function accountNavigation() {
+    let link = $("#account-nav-link");
+    if (!link) {
+      link = document.createElement("a");
+      link.id = "account-nav-link";
+      link.href = "account.html";
+      $("#primary-nav").append(link);
+    }
+    link.textContent = Backend.accountsAvailable && Backend.auth.user ? "Личный кабинет" : "Аккаунт";
+  }
+  function clearAccountViews() {
+    ownedBuilds.clear();
+    saveAttempt = null;
+    serverDialogVersion++;
+    if ($("#details").open) $("#details").close();
+    if (savedBuild) savedBuild.canEdit = false;
+  }
+  function accountFields() {
+    const register = accountMode === "register";
+    return '<form id="account-' + (register ? 'register' : 'login') + '-form" class="account-form">' +
+      '<label for="account-username">Логин<input id="account-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_]{3,32}" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="account-username-help"></label>' +
+      '<p id="account-username-help" class="caption">От 3 до 32 латинских букв, цифр или знаков подчёркивания. Почта не нужна.</p>' +
+      (register ? '<label for="account-display-name">Имя для отображения <span class="caption">(необязательно)</span><input id="account-display-name" name="displayName" maxlength="60" autocomplete="nickname"></label>' : '') +
+      '<label for="account-password">Пароль<input id="account-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="' + (register ? 'new-password' : 'current-password') + '" aria-describedby="account-password-help"></label>' +
+      '<p id="account-password-help" class="caption">От 10 до 128 символов. ' + (register ? 'Используйте отдельный пароль и сохраните его в менеджере паролей. Восстановления через почту нет.' : 'Введите пароль, который указали при регистрации.') + '</p>' +
+      '<p id="account-form-error" class="warn" role="alert" tabindex="-1"></p>' +
+      '<button class="btn" type="submit">' + (register ? 'Создать аккаунт' : 'Войти') + '</button></form>';
+  }
+  function accountBuildsHTML(items) {
+    return items.length
+      ? '<ul class="server-build-list account-build-list">' + items.map(record => '<li><div><strong>' + esc(record.name) + '</strong><p class="caption">Обновлено ' + esc(date(record.updatedAt)) + ' · версия ' + record.version + '</p></div><a class="btn secondary small" href="' + esc(savedURL(record.id).href) + '">Открыть и изменить</a></li>').join('') + '</ul>'
+      : '<p>Сохранённых сборок пока нет. Выберите детали в конфигураторе и нажмите «Сохранить на сервере».</p><a class="btn" href="builder.html">Собрать компьютер</a>';
+  }
+  async function account() {
+    const ticket = ++accountRequest;
+    const title = heading("Личный кабинет", "Сохраняйте состав компьютера и возвращайтесь к нему с другого устройства.");
+    if (!Backend.accountsAvailable) {
+      app.innerHTML = title + '<section class="account-panel"><h2>Нужен сервер с аккаунтами</h2><p>В этой версии сайта вход недоступен. GitHub Pages показывает статический интерфейс, а прежний Python API не хранит аккаунты.</p><p>Для локальной версии откройте папку проекта в VS Code и выполните в терминале:</p><pre class="account-command"><code>node online/server.mjs</code></pre><p>Затем откройте <code>localhost:8080/account.html</code> в адресной строке браузера.</p></section>';
+      return;
+    }
+    if (accountError) {
+      app.innerHTML = title + '<section class="account-panel"><p class="warn" role="alert">' + esc(accountError) + '</p><button class="btn secondary" type="button" data-action="account-retry">Повторить загрузку</button></section>';
+      return;
+    }
+    const user = Backend.auth.user;
+    if (!user) {
+      app.innerHTML = title + (accountMessage ? '<p class="info-note" role="status">' + esc(accountMessage) + '</p>' : '') +
+        '<div class="account-layout"><section class="account-panel"><div class="account-tabs" role="group" aria-label="Действие с аккаунтом"><button class="btn ' + (accountMode === 'login' ? '' : 'secondary') + '" type="button" data-action="account-mode" data-mode="login" aria-pressed="' + (accountMode === 'login') + '">Вход</button><button class="btn ' + (accountMode === 'register' ? '' : 'secondary') + '" type="button" data-action="account-mode" data-mode="register" aria-pressed="' + (accountMode === 'register') + '">Регистрация</button></div><h2>' + (accountMode === 'register' ? 'Создать аккаунт' : 'Войти в аккаунт') + '</h2>' + accountFields() + '</section><aside class="account-panel account-explanation"><h2>Что хранится в аккаунте</h2><p>Сборки записываются в базу на сервере. После входа вы сможете открыть, изменить или удалить свои записи.</p><p>Гостевые сборки этого браузера перейдут в аккаунт при входе. Избранное, сравнение и несохранённый состав остаются в браузере.</p><p>Общая ссылка показывает название и состав сборки. Другой посетитель может сохранить свою копию; изменять исходную запись может её владелец.</p></aside></div>';
+      return;
+    }
+    app.innerHTML = title + '<section class="account-panel"><div class="account-profile"><div><h2>' + esc(user.displayName || user.username) + '</h2><p class="caption">Логин: ' + esc(user.username) + '</p></div><button class="btn secondary" type="button" data-action="account-logout">Выйти из аккаунта</button></div><p id="account-profile-error" class="warn" role="alert" tabindex="-1"></p><h3>Мои сборки</h3><p class="caption">' + accountOwnershipNote() + '</p><div id="account-builds" aria-live="polite"><p role="status">Загрузка сборок из базы…</p></div></section>';
+    try {
+      const items = await Backend.saved.list();
+      if (ticket !== accountRequest || !$("#account-builds") || Backend.auth.user?.id !== user.id) return;
+      $("#account-builds").innerHTML = accountBuildsHTML(items);
+    } catch (error) {
+      if (ticket !== accountRequest || !$("#account-builds")) return;
+      $("#account-builds").innerHTML = '<p class="warn" role="alert">' + esc(error.message) + '</p><button class="btn secondary" type="button" data-action="account-retry">Повторить загрузку</button>';
+    }
+  }
+  async function refreshAccountView(render = true, preserveForm = false) {
+    if (!Backend.accountsAvailable || accountBusy) return;
+    accountBusy = true;
+    const oldId = Backend.auth.user?.id || null;
+    let identityChanged = false;
+    try {
+      await Backend.auth.me();
+      accountError = "";
+      identityChanged = oldId !== (Backend.auth.user?.id || null);
+      if (identityChanged) {
+        clearAccountViews();
+        if (page === "builder" && $("#saved-state")) updateSummary();
+      }
+      accountNavigation();
+    } catch (error) { accountError = error.message; }
+    finally { accountBusy = false; }
+    if (render && page === "account") {
+      const editing = $("#account-login-form") || $("#account-register-form");
+      // Возврат из менеджера паролей не должен пересоздавать ту же гостевую
+      // форму. При смене аккаунта и явном повторе показываем актуальную страницу.
+      if (!preserveForm || identityChanged || !editing) await account();
+    }
+  }
+  async function submitAccount(form) {
+    if (accountBusy || !Backend.accountsAvailable || !form.reportValidity()) return;
+    const username = $("#account-username").value.trim();
+    const password = $("#account-password").value;
+    const displayName = $("#account-display-name")?.value.trim() || "";
+    const register = form.id === "account-register-form";
+    const errorNode = $("#account-form-error");
+    const controls = [...app.querySelectorAll("button,input")];
+    controls.forEach(node => { node.disabled = true; });
+    errorNode.textContent = "";
+    accountBusy = true;
+    form.setAttribute("aria-busy", "true");
+    try {
+      if (register) await Backend.auth.register(username, password, displayName);
+      else await Backend.auth.login(username, password);
+      clearAccountViews();
+      accountError = "";
+      accountMessage = "";
+      accountNavigation();
+      await account();
+      app.focus({ preventScroll: true });
+      toast(register ? "Аккаунт создан. Вы вошли на сайт." : "Вы вошли в аккаунт.");
+    } catch (error) {
+      errorNode.textContent = error.message;
+      const passwordField = $("#account-password");
+      if (passwordField) passwordField.value = "";
+      errorNode.focus();
+    } finally {
+      accountBusy = false;
+      form.removeAttribute("aria-busy");
+      controls.forEach(node => { if (node.isConnected) node.disabled = false; });
+    }
+  }
+  async function logoutAccount() {
+    if (accountBusy || !Backend.accountsAvailable) return;
+    accountBusy = true;
+    const button = $('[data-action="account-logout"]');
+    if (button) button.disabled = true;
+    try {
+      await Backend.auth.logout();
+      clearAccountViews();
+      accountMessage = "Вы вышли из аккаунта. Ваши сборки остаются в базе и снова появятся после входа.";
+      accountMode = "login";
+      accountNavigation();
+      await account();
+      app.focus({ preventScroll: true });
+    } catch (error) {
+      const node = $("#account-profile-error");
+      if (node) { node.textContent = error.message; node.focus(); }
+      else toast(error.message);
+    } finally { accountBusy = false; if (button?.isConnected) button.disabled = false; }
+  }
+  function serverError(message) {
+    const node = $("#server-form-error");
+    if (node) node.textContent = message;
+    else toast(message);
+  }
+  function saveBuildDialog() {
+    if (!Backend.savedAvailable) return;
+    serverDialogVersion++;
+    showDialog('<h2 id="dialog-title">Сохранить сборку на сервере</h2>' +
+      '<form id="server-save-form" class="server-build-form"><label for="saved-name">Название сборки<input id="saved-name" name="name" required maxlength="80" autocomplete="off" value="' + esc(savedBuild?.name || "Мой компьютер") + '"></label>' +
+      (savedBuild?.canEdit
+        ? '<label class="server-copy-choice"><input id="saved-as-copy" type="checkbox"> Сохранить новую копию вместо изменения «' + esc(savedBuild.name) + '»</label>'
+        : savedBuild ? '<p class="caption">Будет создана ваша копия. Исходная запись останется без изменений.</p>' : '') +
+      '<p class="caption">Название и состав доступны любому, у кого есть ссылка. Не вводите личные данные.</p><p class="caption">' + accountOwnershipNote() + '</p>' +
+      '<p id="server-form-error" class="warn" role="alert"></p><button class="btn" type="submit">' +
+      (savedBuild?.canEdit ? 'Сохранить изменения' : 'Сохранить и получить ссылку') + '</button></form>');
+    $("#saved-name").focus();
+  }
+  function newSaveRequestId() {
+    if (typeof crypto !== "object") throw new Error("Браузер не поддерживает безопасное сохранение. Обновите его или откройте сайт по HTTPS.");
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    // getRandomValues доступен и при показе локального сервера по HTTP в общей сети.
+    if (typeof crypto.getRandomValues !== "function") throw new Error("Браузер не поддерживает безопасное сохранение. Откройте сайт по HTTPS.");
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const value = [...bytes].map(byte => byte.toString(16).padStart(2, "0")).join("");
+    return [value.slice(0, 8), value.slice(8, 12), value.slice(12, 16), value.slice(16, 20), value.slice(20)].join("-");
+  }
+  async function saveServerBuild(form) {
+    if (serverBusy || !Backend.savedAvailable) return;
+    const nameField = $("#saved-name");
+    nameField.setCustomValidity(nameField.value.trim() ? "" : "Введите название сборки.");
+    if (!form.reportValidity()) return;
+    const name = nameField.value.trim();
+    const parts = { ...S.parts };
+    const update = savedBuild?.canEdit && !$("#saved-as-copy")?.checked;
+    const target = update ? { ...savedBuild } : null;
+    const fingerprint = JSON.stringify([target?.id, target?.version, name, Core.partsString(parts)]);
+    try {
+      if (!saveAttempt || saveAttempt.fingerprint !== fingerprint)
+        saveAttempt = { fingerprint, requestId: newSaveRequestId() };
+    } catch (error) {
+      serverError(error.message);
+      return;
+    }
+    serverBusy = true;
+    const controls = [...$("#details").querySelectorAll("button,input")];
+    controls.forEach(control => { control.disabled = true; });
+    serverError("");
+    try {
+      const record = update
+        ? await Backend.saved.update(target.id, name, parts, target.version)
+        : await Backend.saved.create(name, parts, saveAttempt.requestId);
+      savedBuild = { ...record, canEdit: true };
+      savedPartsKey = Core.partsString(record.parts);
+      // Новая осознанная операция должна получить новый ключ; при отказе ключ остаётся для retry.
+      saveAttempt = null;
+      syncBuilderURL();
+      updateSummary();
+      showDialog('<h2 id="dialog-title">Сборка сохранена</h2><p>«' + esc(record.name) + '» записана в базу на сервере.</p>' +
+        '<label for="share-link">Ссылка на сохранённый состав</label><input id="share-link" readonly value="' + esc(savedURL(record.id).href) + '">' +
+        '<button class="btn" type="button" data-action="copy-link">Скопировать ссылку</button>' +
+        (Core.partsString(S.parts) !== savedPartsKey ? '<p class="info-note">Текущий состав изменился во время сохранения. Ссылка открывает именно записанную версию.</p>' : ''));
+      toast("Сборка сохранена в базе.");
+    } catch (error) {
+      serverError(error.message + (error.status === 409 ? " Откройте актуальную запись в «Моих сборках» перед повторным изменением." : " Текущий состав не изменён."));
+    } finally {
+      serverBusy = false;
+      controls.forEach(control => { if (control.isConnected) control.disabled = false; });
+    }
+  }
+  async function showOwnedBuilds() {
+    if (!Backend.savedAvailable || serverBusy) return;
+    const ticket = ++serverDialogVersion;
+    showDialog('<h2 id="dialog-title">Мои сборки</h2><p role="status">Загрузка с сервера…</p>');
+    try {
+      const items = await Backend.saved.list();
+      if (ticket !== serverDialogVersion || !$("#details").open) return;
+      ownedBuilds.clear();
+      for (const record of items) ownedBuilds.set(record.id, record);
+      showDialog('<h2 id="dialog-title">Мои сборки</h2><p class="caption">' + accountOwnershipNote() + '</p>' +
+        (items.length ? '<ul class="server-build-list">' + items.map(record => '<li><div><strong>' + esc(record.name) + '</strong><p class="caption">Обновлено ' + esc(date(record.updatedAt)) + ' · версия ' + record.version + '</p></div><div class="row"><a class="btn secondary small" href="' + esc(savedURL(record.id).href) + '">Открыть</a><button class="btn secondary small danger" type="button" data-action="server-delete" data-id="' + esc(record.id) + '">Удалить</button></div></li>').join('') + '</ul>'
+          : '<p>Сохранённых сборок пока нет. Выберите детали и нажмите «Сохранить на сервере».</p>'));
+    } catch (error) {
+      if (ticket !== serverDialogVersion || !$("#details").open) return;
+      showDialog('<h2 id="dialog-title">Мои сборки</h2><p class="warn" role="alert">' + esc(error.message) + '</p><button class="btn secondary" type="button" data-action="server-my-builds">Повторить загрузку</button>');
+    }
+  }
+  function deleteBuildDialog(id) {
+    const record = ownedBuilds.get(id);
+    if (!record || serverBusy) return;
+    serverDialogVersion++;
+    showDialog('<h2 id="dialog-title">Удалить сохранённую сборку?</h2><p>Запись «' + esc(record.name) + '» будет удалена из базы. Её прежняя ссылка перестанет открываться. Текущий состав в конфигураторе останется.</p><p id="server-form-error" class="warn" role="alert"></p><div class="row"><button class="btn secondary danger" type="button" data-action="server-delete-confirm" data-id="' + esc(id) + '">Удалить запись</button><button class="btn secondary" type="button" data-action="server-my-builds">Отмена</button></div>');
+  }
+  async function deleteServerBuild(id) {
+    if (serverBusy || !ownedBuilds.has(id)) return;
+    serverBusy = true;
+    const controls = [...$("#details").querySelectorAll("button")];
+    controls.forEach(control => { control.disabled = true; });
+    let removed = false;
+    try {
+      await Backend.saved.remove(id);
+      removed = true;
+      ownedBuilds.delete(id);
+      if (savedBuild?.id === id) {
+        savedBuild = null;
+        savedPartsKey = "";
+        syncBuilderURL();
+        updateSummary();
+      }
+      toast("Запись удалена. Текущий состав сохранён в браузере.");
+    } catch (error) {
+      serverError(error.message);
+    } finally {
+      serverBusy = false;
+      controls.forEach(control => { if (control.isConnected) control.disabled = false; });
+    }
+    if (removed) await showOwnedBuilds();
+  }
+
   function exportBuild() {
     const cost = budget(S.parts),
       result = check(S.parts);
@@ -1070,6 +1391,20 @@ window.SOBRANO_APP_READY = (async function () {
     const action = button.dataset.action,
       index = Number(button.dataset.index),
       p = P[index];
+    if (action === "account-mode") {
+      if (accountBusy) return;
+      accountMode = button.dataset.mode === "register" ? "register" : "login";
+      accountMessage = "";
+      await account();
+      $("#account-username")?.focus();
+      return;
+    }
+    if (action === "account-retry") { await refreshAccountView(); return; }
+    if (action === "account-logout") { await logoutAccount(); return; }
+    if (action === "server-save") { saveBuildDialog(); return; }
+    if (action === "server-my-builds") { await showOwnedBuilds(); return; }
+    if (action === "server-delete") { deleteBuildDialog(button.dataset.id); return; }
+    if (action === "server-delete-confirm") { await deleteServerBuild(button.dataset.id); return; }
     if (action === "favorite" && p) {
       S.fav = S.fav.includes(index)
         ? S.fav.filter((i) => i !== index)
@@ -1146,9 +1481,18 @@ window.SOBRANO_APP_READY = (async function () {
     if (action === "retry-builds") await drawBuilds();
     if (action === "export") exportBuild();
     if (action === "share") {
+      const url = configURL();
+      const loopback = url.hostname === "localhost" || url.hostname.endsWith(".localhost") ||
+        /^127\./.test(url.hostname) || url.hostname === "[::1]";
+      const stored = savedBuild && Core.partsString(S.parts) === savedPartsKey;
+      const hint = (loopback
+        ? '<p class="info-note">Этот локальный адрес работает только на этом компьютере. Для телефона нужен опубликованный онлайн-сайт или адрес компьютера в общей сети.</p>'
+        : '<p class="caption">Скопируйте ссылку, чтобы открыть тот же состав на другом устройстве.</p>') +
+        (stored ? '<p class="caption">Ссылка открывает сохранённую запись из серверной базы.</p>'
+          : savedBuild ? '<p class="info-note">Состав изменён после сохранения. Эта ссылка передаёт текущие детали; запись в базе обновится после нажатия «Сохранить на сервере».</p>' : '');
       showDialog(
-        '<h2 id="dialog-title">Ссылка на сборку</h2><p class="caption">Скопируйте ссылку, чтобы открыть этот состав на другом устройстве.</p><label for="share-link">Ссылка на конфигурацию</label><input id="share-link" readonly value="' +
-          esc(configURL().href) +
+        '<h2 id="dialog-title">Ссылка на сборку</h2>' + hint + '<label for="share-link">Ссылка на конфигурацию</label><input id="share-link" readonly value="' +
+          esc(url.href) +
           '"><button class="btn" data-action="copy-link">Скопировать ссылку</button>',
       );
       $("#share-link").select();
@@ -1167,9 +1511,23 @@ window.SOBRANO_APP_READY = (async function () {
           );
       else toast("Ссылка выделена. Нажмите Ctrl+C или выберите «Копировать».");
     }
-    if (action === "close-dialog") $("#details").close();
+    if (action === "close-dialog") {
+      if (serverBusy) return;
+      serverDialogVersion++;
+      $("#details").close();
+    }
   });
-  document.addEventListener("submit", (event) => {
+  document.addEventListener("submit", async (event) => {
+    if (["account-login-form", "account-register-form"].includes(event.target.id)) {
+      event.preventDefault();
+      await submitAccount(event.target);
+      return;
+    }
+    if (event.target.id === "server-save-form") {
+      event.preventDefault();
+      await saveServerBuild(event.target);
+      return;
+    }
     if (event.target.id === "catalog-filters") {
       event.preventDefault();
       clearTimeout(searchTimer);
@@ -1181,6 +1539,7 @@ window.SOBRANO_APP_READY = (async function () {
     }
   });
   document.addEventListener("input", (event) => {
+    if (event.target.id === "saved-name") event.target.setCustomValidity("");
     if (
       event.target.form?.id === "catalog-filters" &&
       event.target.tagName === "INPUT"
@@ -1191,6 +1550,10 @@ window.SOBRANO_APP_READY = (async function () {
     if (event.target.id === "budget") drawBuilds();
   });
   document.addEventListener("change", async (event) => {
+    if (event.target.id === "saved-as-copy") {
+      const submit = $("#server-save-form button[type=submit]");
+      if (submit) submit.textContent = event.target.checked ? "Сохранить новую копию" : "Сохранить изменения";
+    }
     if (event.target.id === "compatible-only") {
       if (event.target.checked) params.delete("compat");
       else params.set("compat", "all");
@@ -1293,6 +1656,10 @@ window.SOBRANO_APP_READY = (async function () {
     $("#menu-toggle").setAttribute("aria-expanded", String(open));
     $("#primary-nav").classList.toggle("open", open);
   });
+  $("#details").addEventListener("cancel", (event) => {
+    if (serverBusy) event.preventDefault();
+    else serverDialogVersion++;
+  });
   document.addEventListener("keydown", (event) => {
     if (
       event.key === "Escape" &&
@@ -1339,7 +1706,10 @@ window.SOBRANO_APP_READY = (async function () {
     about,
     product: productDetail,
     build: buildDetail,
+    account,
   };
+  accountNavigation();
+  if (Backend.accountsAvailable) await refreshAccountView(false);
   await (renderers[page] || home)();
   counters();
   $("#storage-note").hidden = storageOK;
@@ -1357,8 +1727,13 @@ window.SOBRANO_APP_READY = (async function () {
     configURL,
     price: Prices.price,
     budget,
-    backend: Backend.enabled ? "python" : "static",
+    backend: Backend.enabled ? window.SOBRANO_RUNTIME.backend : "static",
   };
+  // Cookie задаёт сессию на сервере. При возврате из другой вкладки перечитываем её,
+  // чтобы после выхода не показывать прежний кабинет из памяти страницы.
+  window.addEventListener("focus", () => {
+    if (Backend.accountsAvailable) refreshAccountView(page === "account", true);
+  });
   return true;
 })().catch((error) => {
   const node = document.getElementById("app");

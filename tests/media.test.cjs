@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-function load(extraPhotos) {
+function load(extraPhotos, localPhotos) {
   const context = vm.createContext({
     window: {
       SOBRANO_DATA: JSON.parse(
@@ -18,6 +18,7 @@ function load(extraPhotos) {
     context,
   );
   if (extraPhotos) context.window.SOBRANO_PRODUCT_IMAGES = extraPhotos;
+  if (localPhotos) context.window.SOBRANO_LOCAL_IMAGES = localPhotos;
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, "../js/media.js"), "utf8"),
     context,
@@ -30,6 +31,42 @@ function load(extraPhotos) {
 }
 
 const { media, data, photos } = load();
+
+test("локальный кеш сохраняет источник, подпись модели и запасную HTTPS-ссылку", () => {
+  const model = "AMD Ryzen 5 5600";
+  const photo = media.get(model);
+  const local = "assets/products/amd-ryzen-5-5600-1234567890abcdef.jpg";
+  const { media: cached } = load(null, { [photo.src]: local });
+  assert.equal(cached.get(model).localSrc, local);
+  assert.equal(cached.get(model).src, photo.src);
+  const html = cached.render({ name: model, c: "cpu" });
+  assert(html.includes('src="' + local + '"'));
+  assert(html.includes('data-fallback="' + photo.src + '"'));
+  assert.match(html, /Источник: Newegg/);
+  for (const bad of ["../outside.jpg", "assets/products/../../outside.jpg", "https://unknown.example/photo.jpg", "assets/products/a.svg", "assets/products/a.jpg?bad=1"]) {
+    const { media: safe } = load(null, { [photo.src]: bad });
+    assert.equal(safe.get(model).localSrc, null);
+    assert(safe.render({ name: model, c: "cpu" }).includes('src="' + photo.src + '"'));
+  }
+});
+
+test("манифест кеша соответствует фотографиям действующего каталога", () => {
+  const sources = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/photo-cache-sources.json"), "utf8"));
+  const byURL = new Map(sources.map((record) => [record.src, record]));
+  assert.equal(byURL.size, sources.length);
+  let mapped = 0;
+  for (const row of data.products) {
+    const photo = media.get(row[1]);
+    if (!photo) continue;
+    const source = byURL.get(photo.src);
+    assert(source, row[1]);
+    assert.equal(source.source, photo.source);
+    assert.equal(source.fallback, photo.fallback);
+    assert(source.models.includes(row[1]));
+    mapped++;
+  }
+  assert.equal(mapped, media.coverage().withPhoto);
+});
 
 test("OEM/BOX совпадают с тем же CPU, а разные модели и производители — нет", () => {
   assert.equal(

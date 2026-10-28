@@ -2114,6 +2114,95 @@ dialog input {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.server-build-tools {
+  margin-bottom: 24px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.server-build-tools .caption {
+  margin-top: 10px;
+}
+.server-build-form {
+  display: grid;
+  gap: 16px;
+}
+.server-build-form label {
+  display: grid;
+  gap: 8px;
+}
+.server-build-form .server-copy-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.server-copy-choice input {
+  width: auto;
+  margin-top: 4px;
+}
+.server-build-list {
+  list-style: none;
+  padding: 0;
+}
+.server-build-list li {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+#server-form-error:empty {
+  display: none;
+}
+.account-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+.account-panel {
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow-wrap: anywhere;
+}
+.account-panel h2 { margin-top: 0; }
+.account-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.account-form { display: grid; gap: 14px; }
+.account-form label { display: grid; gap: 7px; }
+.account-form .caption { margin: -5px 0 4px; }
+.account-form input { width: 100%; min-width: 0; }
+.account-form button[type="submit"] { margin-top: 8px; }
+#account-form-error:empty,
+#account-profile-error:empty { display: none; }
+.account-profile {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.account-profile h2, .account-profile p { margin: 0; }
+.account-build-list li { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.account-command { overflow-x: auto; padding: 12px; border-radius: 6px; background: var(--soft); }
+@media (max-width: 700px) {
+  .account-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .account-panel { padding: 20px; }
+  .account-profile { display: grid; }
+  .account-build-list li { grid-template-columns: minmax(0, 1fr); }
+  .account-build-list .btn { width: 100%; }
+}
 @media (max-width: 900px) {
   .build-detail-layout {
     grid-template-columns: minmax(0, 1fr);

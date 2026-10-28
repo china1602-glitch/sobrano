@@ -20,3 +20,14 @@ node_modules/
 *.temp
 .DS_Store
 Thumbs.db
+
+# Online backend runtime state
+instance/
+.wrangler/
+.sites-runtime/
+outputs/
+dist/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+online/generated-assets.mjs

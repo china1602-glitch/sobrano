@@ -1,111 +1,82 @@
-# Структура проекта «СОБРАНО»
+# Структура проекта
 
-Исходники находятся в `C:\Users\Студент\sobrano-work\github`. Фронтенд, бэкенд и данные разделены по файлам. Резервная копия `../local/` в публикацию не входит и не изменяется.
-
-Репозиторий: https://github.com/china1602-glitch/sobrano
-Статический сайт: https://china1602-glitch.github.io/sobrano/
-
-## Дерево папок
+В VS Code откройте папку, в которой лежат **`package.json`, `online/`, `index.html`**, либо `sobrano.code-workspace`. Не открывайте только отдельный HTML-файл.
 
 ```text
-github/
-├── index.html                  Главная
-├── catalog.html                Каталог
-├── product.html                Карточка модели
-├── builds.html                 Готовые сборки
-├── build.html                  Карточка сборки
-├── builder.html                Конфигуратор
-├── compare.html                Сравнение
-├── favorites.html              Избранное
-├── about.html                  Данные, цены, фото и ограничения
-├── css/
-│   └── style.css               Оформление, две темы, адаптивность
+проект/
+├── index.html, catalog.html, product.html
+├── builds.html, build.html, builder.html
+├── compare.html, favorites.html, account.html, about.html
+├── css/style.css                   Темы, размеры, адаптивность
 ├── js/
-│   ├── bootstrap.js            Выбор режима и загрузка модулей
-│   ├── app.js                  Страницы и действия пользователя
-│   ├── backend-client.js       Запросы к Python API
-│   ├── core.js                 Модели, характеристики, состав и статическая проверка
-│   ├── catalog-ui.js           Форма фильтров и статический поиск/сортировка
-│   ├── compatibility.js        Статический подбор кандидатов
-│   ├── pricing.js              Статические цены и бюджет
-│   ├── media.js                Вывод фото, подписей и заглушек
-│   └── product-images.js       Соответствие изображений моделям и источникам
-├── backend/
-│   ├── __init__.py             Python-пакет backend
-│   ├── catalog.py              Чтение JSON, поиск и фильтрация
-│   ├── compatibility.py        Проверка состава и кандидатов на Python
-│   └── pricing.py              Выбор цены и расчёт бюджета на Python
-├── server.py                  HTTP-сервер сайта и API
-├── runtime.json               Режим static для GitHub Pages
+│   ├── bootstrap.js                Определение режима сервера
+│   ├── backend-client.js           Fetch, ошибки, сессия, аккаунты
+│   ├── app.js                      Страницы, формы и события
+│   ├── core.js                     Модели и состав
+│   ├── catalog-ui.js               Фильтры/сортировка
+│   ├── compatibility.js            Известные правила совместимости
+│   ├── pricing.js                  Предложения и бюджет
+│   ├── media.js                    Вывод фото и состояния ошибки
+│   └── product-images.js           Сопоставление фото и источники
+├── online/
+│   ├── server.mjs                  Основной Node.js HTTP-сервер
+│   ├── worker.mjs                  Облачный вход Cloudflare Workers
+│   ├── api.mjs                     Маршруты, JSON, CSRF, права
+│   ├── domain.mjs                  Каталог, расчёт, проверка состава
+│   ├── auth.mjs                    Пароли и учётные данные
+│   ├── store.mjs                   SQL-каталог, аккаунты, сессии, сборки
+│   ├── node-db.mjs                 Адаптер встроенной SQLite
+│   ├── schema.sql                  Начальная локальная схема
+│   ├── db-schema.mjs               Описание схемы для Drizzle
+│   └── generated-assets.mjs        Результат сборки, не ручной код
+├── drizzle/                        SQL-миграции и metadata
+├── drizzle.config.mjs              Настройка генерации миграций
 ├── data/
-│   ├── catalog.json            190 моделей, 22 сборки и метаданные фото
-│   └── offers.json             8 датированных предложений магазинов
-├── assets/
-│   ├── favicon.svg             Значок сайта
-│   └── fonts/                  Manrope: кириллица, латиница и OFL.txt
-├── tests/
-│   ├── *.test.cjs              Тесты JavaScript и API-клиента
-│   ├── test_*.py               Тесты Python, HTTP и целостности проекта
-│   └── browser-smoke.cjs       Проверка в настоящем Chrome
+│   ├── catalog.json                Исходные модели и готовые составы
+│   ├── offers.json                 Датированные предложения магазинов
+│   └── photo-cache-sources.json    Источники необязательного кеша фото
+├── instance/sobrano.sqlite          База, появляется при запуске
+├── assets/                         Локальные шрифты, favicon, фото при наличии
+├── backend/                        Python-расчёт и проверка файлов состава
+├── desktop_app.py                  Отдельное приложение Python/Tkinter
+├── server.py                       Сохранённый прежний Python API
+├── runtime.json                    Статический режим для файлов Pages
+├── tools/                          Сборка, запуск JS-тестов, загрузка фото
+├── tests/                          Расчёт, HTTP, SQL, доступ, браузер и Python
 ├── docs/
-│   ├── COMPATIBILITY.md        Правила и границы проверки комплектующих
-│   ├── PRICE-SOURCES.md        Источники цен
-│   ├── PHOTO-SOURCES.md        Источники и подписи изображений
-│   ├── DEFENSE.md              Подробный запуск F5 и точки останова
-│   ├── FINAL_REPORT.md         Отчёт предыдущего этапа восстановления
-│   ├── PUBLICATION.md          Публикация Pages и проверка двух режимов
-│   ├── QA.md                   Исторический журнал проверок
-│   ├── TASKS.md                История работ и ограничения данных
-│   └── screenshots/            Контрольные снимки интерфейса
-├── .vscode/
-│   ├── extensions.json         Бесплатные расширения для отладки
-│   ├── launch.json             Запуск Python через F5
-│   ├── tasks.json              Запуск сайта и тестов через меню
-│   └── settings.json           Скрытие двоичного Python-кэша
-├── .gitignore                 Исключение секретов, кэша и временных файлов
-├── .nojekyll                   Публикация готовых статических файлов без Jekyll
-├── README.md                  Запуск и основные возможности
-├── DEFENSE.md                 Демонстрация двух вариантов на 5–7 минут
-├── FRONTEND_BACKEND_GUIDE.md   Разбор файлов, API и архитектуры
-└── PROJECT_STRUCTURE.md       Эта карта исходников
+│   ├── PM6_REQUIREMENTS.md         Соответствие вопросам преподавателя
+│   ├── ONLINE_BACKEND.md           Запуск/API/хранение
+│   ├── ONLINE_CHECKS.md            Фактически выполненные проверки
+│   ├── COMPATIBILITY.md            Границы проверки совместимости
+│   ├── PRICE-SOURCES.md            Происхождение цен
+│   └── PHOTO-SOURCES.md            Происхождение фото
+├── .vscode/                        Запуск F5 и задачи
+├── .openai/hosting.json             Связь с прежним Sites-размещением
+├── package.json, package-lock.json  Команды и зависимости разработки
+├── requirements.txt                Пояснение зависимостей Python/Tkinter
+├── START.bat, START-ONLINE.bat      Основной Node.js-сервер Windows
+├── START-PYTHON.bat                 Прежний Python API
+├── START-DESKTOP.bat                Оконная Python-программа
+├── sobrano.code-workspace           Рабочая область VS Code
+├── README.md                       Что и как запустить
+├── DEFENSE.md                      Сценарий на 5–6 минут
+└── FRONTEND_BACKEND_GUIDE.md        Объяснение работы частей
 ```
 
-`.git/` содержит историю и настройки Git, а не код сайта. Виртуальное окружение для запуска не требуется. Python-кэш и секретные конфигурации не входят в коммит.
+`node_modules/` появляется после `npm ci`; `dist/` — после сборки. Они не заменяют исходники. `dist/` и `online/generated-assets.mjs` генерируются; вручную их не редактируют.
 
-## Как связаны части
+`instance/`, SQLite-файлы, сессии, пароли и временные данные не включают в исходный архив и публичный Git. Чтобы перенести существующую локальную базу, сначала остановите сервер, затем отдельно скопируйте `instance/`. Новый чистый архив не содержит чужих аккаунтов и личных записей.
 
-HTML содержит общую структуру девяти страниц. CSS задаёт оформление. JavaScript строит содержимое выбранного раздела, обрабатывает формы и хранит пользовательский выбор в localStorage.
+`.git/` содержит историю кода. `__pycache__/` и `.pyc` — двоичный кеш Python, а не текст программы. Для объяснения открывайте `.py`, `.mjs`, `.js`, `.sql`, HTML и CSS. Технические снимки проверки не нужны сайту; для презентации сделайте снимки своей запущенной копии.
 
-В статическом режиме bootstrap читает `runtime.json`, `data/catalog.json` и `data/offers.json`. Поиск, цены и совместимость вычисляют клиентские JS-модули. Все пути вычисляются относительно папки сайта, включая `/sobrano/`.
+## Какие части связаны
 
-При запуске `server.py` адрес `/runtime.json` возвращает `python`, не меняя файл на диске. Браузер получает каталог и результаты через API. Сервер читает те же JSON; функции `backend/` ищут модели, проверяют состав и рассчитывают бюджет.
+**Сайт:** HTML/CSS → `js/app.js` → `js/backend-client.js` → HTTP → `online/api.mjs` → `domain.mjs` / `auth.mjs` / `store.mjs` → JSON → DOM.
 
-## Быстро открыть и запустить
+**SQL:** исходный JSON → загрузка каталога в таблицы; регистрация → аккаунт/сессия; сохранение состава → запись с владельцем. localStorage отдельно хранит избранное, сравнение и текущий несохранённый выбор браузера.
 
-```powershell
-code "$HOME\sobrano-work\github"
-cd "$HOME\sobrano-work\github"
-python server.py
-```
+**Python:** `desktop_app.py` → модули `backend/` → расчёт и локальный JSON/TXT-файл. Это самостоятельное приложение, не исполняемый код облачного JavaScript-сервера.
 
-Откройте http://127.0.0.1:8080/. Если порт занят: `python server.py --port 8081`. Остановка — Ctrl+C.
+**Облако:** `tools/build-online.mjs` собирает Worker; `drizzle/` хранит миграции D1. Файл настройки не доказывает, что новая версия уже опубликована. Прежняя опубликованная версия и новая локальная версия с аккаунтами различаются, пока обновление отдельно не размещено.
 
-Для статической проверки без API проекта:
-
-```powershell
-python -B -m http.server 8000 --bind 127.0.0.1
-```
-
-Откройте http://127.0.0.1:8000/. На Pages не нужен запущенный локальный сервер.
-
-## Что показать в редакторе
-
-1. `catalog.html` — HTML.
-2. `css/style.css` — стили и мобильные правила.
-3. `js/app.js` — обработчик выбора и рендеринг.
-4. `js/backend-client.js` — POST запроса состава.
-5. `server.py` — маршрут `/api/configuration`.
-6. `backend/compatibility.py` — функции `assess` и `check`.
-7. `data/catalog.json` — исходные данные.
-
-Подробный маршрут запроса и вопросы преподавателя — [FRONTEND_BACKEND_GUIDE.md](FRONTEND_BACKEND_GUIDE.md). Сценарий выступления — [DEFENSE.md](DEFENSE.md).
+Начните с [README](README.md), затем прочитайте [разбор](FRONTEND_BACKEND_GUIDE.md) и [сценарий защиты](DEFENSE.md).

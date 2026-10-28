@@ -179,13 +179,14 @@ class SobranoHandler(SimpleHTTPRequestHandler):
 
     def builds_payload(self, params, raw, products, prices):
         maximum = self.number_param(params, "budget")
+        if maximum is not None and (maximum != int(maximum) or maximum > 9007199254740991):
+            raise APIError("Бюджет должен быть неотрицательным целым числом тенге")
         task = params.get("task", "")
         results = self.build_results(raw, products, prices)
         return {"ids": [
             f"b{index}" for index, build in enumerate(raw["builds"])
             if (not task or build[1] == task)
-            and (maximum is None or maximum == 0
-                 or results[f"b{index}"]["budget"]["value"] <= maximum)
+            and (maximum is None or results[f"b{index}"]["budget"]["value"] <= maximum)
         ]}
 
     def read_configuration(self, products):
@@ -278,9 +279,19 @@ class SobranoHandler(SimpleHTTPRequestHandler):
         return True
 
     def public_path(self):
-        # Служебные файлы Git, настройки редактора и .env не являются ресурсами сайта.
+        # Отдаём только ресурсы интерфейса. База аккаунтов и исходники не публичны
+        # даже при случайном запуске старого Python-сервера вместо Node.js.
         path = unquote(urlsplit(self.path).path).replace("\\", "/")
-        if any(part.startswith(".") for part in path.split("/") if part):
+        if path == "/runtime.json" or path == "/api" or path.startswith("/api/"):
+            return True
+        relative = "index.html" if path == "/" else path.lstrip("/")
+        allowed = re.fullmatch(
+            r"(?:[a-z]+\.html|js/[a-z-]+\.js|css/[a-z-]+\.css|data/[a-z-]+\.json|"
+            r"assets/(?:favicon\.svg|fonts/[\w.-]+|products/[\w.-]+))", relative
+        )
+        root = Path(self.directory).resolve()
+        target = (root / relative).resolve()
+        if not allowed or not target.is_relative_to(root) or not target.is_file():
             self.send_error(404, "File not found")
             return False
         return True
@@ -307,21 +318,23 @@ class SobranoHandler(SimpleHTTPRequestHandler):
     do_OPTIONS = unsupported_method
 
 
-def create_server(port=8080, root=None):
-    """Сервер доступен на этом компьютере; порт можно изменить при запуске."""
+def create_server(port=8080, root=None, host="127.0.0.1"):
+    """По умолчанию доступен только на этом ПК; LAN включается явно через --host."""
     handler = partial(SobranoHandler, directory=str(root or PROJECT_ROOT))
-    return ThreadingHTTPServer(("127.0.0.1", port), handler)
+    return ThreadingHTTPServer((host, port), handler)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Локальный Python-сервер СОБРАНО")
     parser.add_argument("--port", type=int, default=8080, help="Порт, по умолчанию 8080")
+    parser.add_argument("--host", choices=("127.0.0.1", "0.0.0.0"), default="127.0.0.1",
+                        help="127.0.0.1 — этот ПК; 0.0.0.0 — доступ из локальной сети")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("порт должен быть от 1 до 65535")
 
     try:
-        server = create_server(args.port)
+        server = create_server(args.port, host=args.host)
     except OSError as error:
         print(f"Не удалось запустить сервер на порту {args.port}: {error}", file=sys.stderr)
         print("Остановите прежний сервер (Ctrl+C) или запустите: py server.py --port 8081", file=sys.stderr)
@@ -333,6 +346,10 @@ def main():
     print(f"Сайт: {url}/", flush=True)
     print(f"Каталог API: {url}/api/catalog", flush=True)
     print(f"Диагностика Python: {url}/api/health", flush=True)
+    if args.host == "0.0.0.0":
+        print("Локальная сеть включена. Подключите телефон к той же сети Wi-Fi.", flush=True)
+        print(f"На телефоне откройте http://<IPv4-компьютера>:{server.server_port}/", flush=True)
+        print("IPv4 смотрите в команде ipconfig (Windows). Разрешите Python для частной сети в брандмауэре.", flush=True)
     print("Запросы браузера появятся ниже. Остановка: Ctrl+C.", flush=True)
     try:
         server.serve_forever()

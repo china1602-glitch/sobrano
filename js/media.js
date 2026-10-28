@@ -44,9 +44,17 @@
     if (photo.kind && photo.kind !== "exact" && photo.kind !== "family") return;
     const kind = photo.kind === "family" ? "family" : "exact";
     if (kind === "family" && !photo.note) return;
+    // cache_images.py добавляет только проверенные локальные файлы.
+    // Источник и подписи сохраняются и после скачивания фотографии.
+    const cached = root.SOBRANO_LOCAL_IMAGES?.[photo.src];
+    const localSrc =
+      typeof cached === "string" &&
+      /^assets\/products\/[a-z0-9][a-z0-9-]*\.(?:jpg|png|webp|gif)$/.test(cached)
+        ? cached
+        : null;
     models.set(
       key(model),
-      Object.freeze({ ...photo, kind, model, title: model }),
+      Object.freeze({ ...photo, localSrc, kind, model, title: model }),
     );
   }
 
@@ -245,7 +253,7 @@
       product.name;
     return `<figure class="product-media ${large ? "media-large" : ""} ${esc(className)}"
       data-media-category="${esc(product.c || "")}" data-media-model="${esc(product.name)}" data-media-kind="${photo.kind}">
-      <img src="${esc(photo.src)}" data-fallback="${esc(photo.fallback || photo.src)}"
+      <img src="${esc(photo.localSrc || photo.src)}" data-fallback="${esc(photo.localSrc ? photo.src : photo.fallback || photo.src)}"
         alt="${esc(description + (photo.note ? "; " + photo.note : ""))}" width="${size}" height="${size}"
         loading="lazy" decoding="async" referrerpolicy="no-referrer">
       <figcaption class="media-credit">

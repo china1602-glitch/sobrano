@@ -1,0 +1,1116 @@
+[
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-736-V03.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-5000-series-ryzen-5-5600-vermeer-socket-am4-desktop-cpu-processor/p/N82E16819113736",
+    "models": [
+      "AMD Ryzen 5 5600"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-683-V01.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-5000-g-series-ryzen-5-5600g-cezanne-socket-am4-desktop-cpu-processor/p/N82E16819113683",
+    "models": [
+      "AMD Ryzen 5 5600G"
+    ]
+  },
+  {
+    "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg/960px-AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/3/3d/AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:AMD_Ryzen_5_7600_top_IMGP6773_smial_wp.jpg",
+    "models": [
+      "AMD Ryzen 5 7600"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-770-02.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-7600x-ryzen-5-7000-series-raphael-zen-4-socket-am5/p/N82E16819113770",
+    "models": [
+      "AMD Ryzen 5 7600X"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-786-04.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-7-7700-ryzen-7-7000-series-raphael-zen-4-socket-am5/p/N82E16819113786",
+    "models": [
+      "AMD Ryzen 7 7700"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Ryzen_7_7800_X3D%2C_unlocked.jpg/960px-Ryzen_7_7800_X3D%2C_unlocked.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/b/bc/Ryzen_7_7800_X3D%2C_unlocked.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Ryzen_7_7800_X3D%2C_unlocked.jpg",
+    "models": [
+      "AMD Ryzen 7 7800X3D"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-785-04.png",
+    "source": "https://www.newegg.com/amd-ryzen-9-7900-ryzen-9-7000-series-raphael-zen-4-socket-am5/p/N82E16819113785",
+    "models": [
+      "AMD Ryzen 9 7900"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-844-05.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-9000-series-ryzen-5-9600x-granite-ridge-socket-am5-desktop-cpu-processor/p/N82E16819113844",
+    "models": [
+      "AMD Ryzen 5 9600X"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-843-09.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-7-9000-series-ryzen-7-9700x-granite-ridge-socket-am5-desktop-cpu-processor/p/N82E16819113843",
+    "models": [
+      "AMD Ryzen 7 9700X"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-842-02.png",
+    "source": "https://www.newegg.com/amd-ryzen-9-9000-series-ryzen-9-9900x-granite-ridge-socket-am5-desktop-cpu-processor/p/N82E16819113842",
+    "models": [
+      "AMD Ryzen 9 9900X"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-841-03.png",
+    "source": "https://www.newegg.com/amd-ryzen-9-9000-series-ryzen-9-9950x-granite-ridge-socket-am5-desktop-cpu-processor/p/N82E16819113841",
+    "models": [
+      "AMD Ryzen 9 9950X"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-358-S02.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-12th-gen-core-i5-12400-alder-lake-lga-1700-desktop-cpu-processor/p/N82E16819118358",
+    "models": [
+      "Intel Core i5-12400"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-360-08.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-12th-gen-core-i5-12400f-alder-lake-lga-1700-desktop-cpu-processor/p/N82E16819118360",
+    "models": [
+      "Intel Core i5-12400F"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B550M/PRO-VDH-WIFI/story_img.png",
+    "source": "https://www.msi.com/Motherboard/B550M-PRO-VDH-WIFI",
+    "models": [
+      "MSI B550M PRO-VDH WIFI"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B650M/PRO-B650M-P/kv.png",
+    "source": "https://www.msi.com/Motherboard/PRO-B650M-P",
+    "models": [
+      "MSI PRO B650M-P"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B760M/PRO-B760M-P-DDR4/images/msi-pro_b760m-p_ddr4-3d2.png",
+    "source": "https://www.msi.com/Motherboard/PRO-B760M-P-DDR4",
+    "models": [
+      "MSI PRO B760M-P DDR4"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1689728820bee4166c12b53c656c39ab1b81888843.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-4060-VENTUS-2X-BLACK-8G-OC/Gallery",
+    "models": [
+      "MSI GeForce RTX 4060 VENTUS 2X BLACK 8G OC"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1681289960b8facf0282b5b2d475a75d487793ffe5.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-4070-VENTUS-2X-12G-OC/Gallery",
+    "models": [
+      "MSI GeForce RTX 4070 VENTUS 2X 12G OC"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1610443907b48feb29b4a49834f4b19e35c5511db6.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-3060-VENTUS-2X-12G-OC/Gallery",
+    "models": [
+      "MSI GeForce RTX 3060 VENTUS 2X 12G OC"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11324_01_rx7600_pulse_8ggddr6/11324_01_rx7600_pulse_8gbgddr6_c01_800x500.ashx?v=31857520491e4c678d9292bbd095cfc7",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7600-8g-gddr6",
+    "models": [
+      "Sapphire PULSE Radeon RX 7600"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11330_02_7800xt_pulse_16gddr6_dual-fan/11330_02_rx7800xt_pulse_16ggddr6_c02_800x500.ashx?v=a5b9460a96de4d949e645502d29fe4f2",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7800-xt-16g-gddr6",
+    "models": [
+      "Sapphire PULSE Radeon RX 7800 XT"
+    ]
+  },
+  {
+    "src": "https://www.asrock.com/Graphics-Card/photo/Intel%20Arc%20A750%20Challenger%20D%208GB%20OC%28M1%29.png",
+    "source": "https://www.asrock.com/Graphics-Card/Intel/Intel%20Arc%20A750%20Challenger%20D%208GB%20OC/",
+    "models": [
+      "ASRock Intel Arc A750 Challenger D 8GB OC"
+    ]
+  },
+  {
+    "src": "https://media.kingston.com/kingston/product-comparison/ktc-comp-chart-fury-beast-ddr4_tn.png",
+    "fallback": "https://media.kingston.com/kingston/key-features/ktc-keyfeature-memory-beast-ddr4-1-lg.jpg",
+    "source": "https://www.kingston.com/en/memory/gaming/kingston-fury-beast-ddr4-memory",
+    "models": [
+      "Kingston FURY Beast 8 ГБ (1 × 8) DDR4-3200",
+      "Kingston FURY Beast 16 ГБ (1 × 16) DDR4-3200",
+      "Kingston FURY Beast 16 ГБ (2 × 8) DDR4-3200",
+      "Kingston FURY Beast 32 ГБ (2 × 16) DDR4-3600",
+      "Kingston FURY Beast 32 ГБ (2×16) DDR4-3200",
+      "Kingston FURY Beast 64 ГБ (2×32) DDR4-3200",
+      "Kingston FURY Beast 8 ГБ (1×8) DDR4-3600",
+      "Kingston FURY Beast 16 ГБ (1×16) DDR4-3600",
+      "Kingston FURY Beast 16 ГБ (2×8) DDR4-3600",
+      "Kingston FURY Beast 64 ГБ (2×32) DDR4-3600"
+    ]
+  },
+  {
+    "src": "https://media.kingston.com/kingston/product-comparison/ktc-comp-chart-fury-beast-ddr5_tn.png",
+    "source": "https://www.kingston.com/en/memory/gaming/kingston-fury-beast-ddr5-memory",
+    "models": [
+      "Kingston FURY Beast 32 ГБ (2 × 16) DDR5-5200",
+      "Kingston FURY Beast 32 ГБ (2 × 16) DDR5-5600",
+      "Kingston FURY Beast 32 ГБ (2 × 16) DDR5-6000",
+      "Kingston FURY Beast 16 ГБ (1×16) DDR5-5200",
+      "Kingston FURY Beast 64 ГБ (2×32) DDR5-5200",
+      "Kingston FURY Beast 16 ГБ (1×16) DDR5-5600",
+      "Kingston FURY Beast 32 ГБ (1×32) DDR5-5600",
+      "Kingston FURY Beast 64 ГБ (2×32) DDR5-5600",
+      "Kingston FURY Beast 64 ГБ (2×32) DDR5-6000",
+      "Kingston FURY Beast 16 ГБ (1×16) DDR5-6000",
+      "Kingston FURY Beast 32 ГБ (1×32) DDR5-6000"
+    ]
+  },
+  {
+    "src": "https://media.kingston.com/kingston/key-features/ktc-keyfeatures-ssd-snv3s-kf1-lg.jpg",
+    "source": "https://www.kingston.com/en/ssd/nv3-nvme-pcie-ssd",
+    "models": [
+      "Kingston NV3 500 ГБ",
+      "Kingston NV3 1000 ГБ",
+      "Kingston NV3 2000 ГБ",
+      "Kingston NV3 4000 ГБ"
+    ]
+  },
+  {
+    "src": "https://media.kingston.com/kingston/key-features/ktc-keyfeatures-ssd-skc3000-1-lg.jpg",
+    "fallback": "https://media.kingston.com/kingston/key-features/ktc-keyfeatures-ssd-skc3000-4-lg.jpg",
+    "source": "https://www.kingston.com/en/ssd/kc3000-nvme-m2-solid-state-drive",
+    "models": [
+      "Kingston KC3000 512 ГБ",
+      "Kingston KC3000 1024 ГБ",
+      "Kingston KC3000 2048 ГБ",
+      "Kingston KC3000 4096 ГБ"
+    ]
+  },
+  {
+    "src": "https://media.kingston.com/kingston/key-features/ktc-keyfeatures-ssd-a400-25-1-lg.jpg",
+    "fallback": "https://media.kingston.com/kingston/key-features/ktc-keyfeatures-ssd-a400-25-3-lg.jpg",
+    "source": "https://www.kingston.com/en/ssd/a400-solid-state-drive",
+    "models": [
+      "Kingston A400 240 ГБ",
+      "Kingston A400 480 ГБ",
+      "Kingston A400 960 ГБ"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK550D/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK550D/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://global.deepcool.com/products/PowerSupplyUnits/powersupplyunits/PK550D-80-PLUS-Bronze-Power-Supply/2022/15621.shtml",
+    "models": [
+      "DeepCool PK550D"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK650D/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK650D/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/PowerSupplyUnits/powersupplyunits/PK650D-80-PLUS-Bronze-Power-Supply/2022/15619.shtml",
+    "models": [
+      "DeepCool PK650D"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK750D/Gallery/800X800/01.jpg?auto=format%2Ccompress",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PK750D/Gallery/110X110/01.jpg?auto=format%2Ccompress",
+    "source": "https://global.deepcool.com/products/PowerSupplyUnits/powersupplyunits/PK750D-80-PLUS-Bronze-Power-Supply/2022/15609.shtml",
+    "models": [
+      "DeepCool PK750D"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/MATREXX_40/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/MATREXX_40/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/fulltowercases/Matrexx-40-Airflow-Micro-ATX-Case/2021/11876.shtml",
+    "models": [
+      "DeepCool MATREXX 40"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CH370/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CH370/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/fulltowercases/CH370-Micro-ATX-Case/2022/15949.shtml",
+    "models": [
+      "DeepCool CH370"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CC560/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CC560/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/fulltowercases/CC560-Mid-Tower-ATX-PC-Case/2021/15216.shtml",
+    "models": [
+      "DeepCool CC560"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AG400/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AG400/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://deepcool.com/products/Cooling/cpuaircoolers/GAMMAXX-AG400-Single-Tower-CPU-Cooler-1851-1700-AM5/2024/15898.shtml",
+    "models": [
+      "DeepCool AG400"
+    ]
+  },
+  {
+    "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/DeepCool_AK400_1.jpg/960px-DeepCool_AK400_1.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/7/7c/DeepCool_AK400_1.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:DeepCool_AK400_1.jpg",
+    "models": [
+      "DeepCool AK400"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/MATREXX_40_3FS/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/MATREXX_40_3FS/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/2021/12078.shtml",
+    "models": [
+      "DeepCool MATREXX 40 3FS"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MAG/A650BN/pd01.jpg",
+    "source": "https://www.msi.com/Power-Supply/MAG-A650BN",
+    "models": [
+      "MSI MAG A650BN",
+      "MSI MAG A550BN"
+    ]
+  },
+  {
+    "src": "https://www.seagate.com/content/dam/seagate/migrated-assets/www-content/products/hard-drives/barracuda-hard-drive/_shared/images/row-4-640x640.jpg",
+    "source": "https://www.seagate.com/products/hard-drives/barracuda-hard-drive/",
+    "models": [
+      "Seagate BarraCuda 1000 ГБ",
+      "Seagate BarraCuda 2000 ГБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-737-V03.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-5000-series-ryzen-5-5500-cezanne-socket-am4-desktop-cpu-processor/p/N82E16819113737",
+    "models": [
+      "AMD Ryzen 5 5500 OEM"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/AMD_Ryzen_5_5600X.jpg/960px-AMD_Ryzen_5_5600X.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/a/a2/AMD_Ryzen_5_5600X.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:AMD_Ryzen_5_5600X.jpg",
+    "models": [
+      "AMD Ryzen 5 5600X OEM"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/AMD_Ryzen_7_5700X_1.jpg/960px-AMD_Ryzen_7_5700X_1.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/a/a7/AMD_Ryzen_7_5700X_1.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:AMD_Ryzen_7_5700X_1.jpg",
+    "models": [
+      "AMD Ryzen 7 5700X OEM"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/AMD_Ryzen_7_5800X_19339.jpg/960px-AMD_Ryzen_7_5800X_19339.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/c/c7/AMD_Ryzen_7_5800X_19339.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:AMD_Ryzen_7_5800X_19339.jpg",
+    "models": [
+      "AMD Ryzen 7 5800X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-664-V01.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-9-5000-series-ryzen-9-5900x-vermeer-socket-am4-desktop-cpu-processor/p/N82E16819113664",
+    "models": [
+      "AMD Ryzen 9 5900X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-663-V01.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-9-5000-series-ryzen-9-5950x-vermeer-socket-am4-desktop-cpu-processor/p/N82E16819113663",
+    "models": [
+      "AMD Ryzen 9 5950X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/ARUXS2204210JL2JUCA.jpg",
+    "source": "https://www.newegg.com/global/kr-en/amd-ryzen-5-4000-g-series-ryzen-5-4600g-renoir-socket-am4-desktop-cpu-processor/p/N82E16819113744",
+    "models": [
+      "AMD Ryzen 5 4600G OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-827-01.jpg",
+    "source": "https://www.newegg.com/p/N82E16819113827",
+    "models": [
+      "AMD Ryzen 5 7500F OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-768-01.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-7-7700x-ryzen-7-7000-series-raphael-zen-4-socket-am5/p/N82E16819113768",
+    "models": [
+      "AMD Ryzen 7 7700X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-769-02.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-9-7900x-ryzen-9-7000-series-raphael-zen-4-socket-am5/p/N82E16819113769",
+    "models": [
+      "AMD Ryzen 9 7900X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-771-09.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-9-7950x-ryzen-9-7000-series-raphael-zen-4-socket-am5/p/N82E16819113771",
+    "models": [
+      "AMD Ryzen 9 7950X OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-814-03.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-5-8600g-ryzen-5-8000-g-series-phoenix-zen-4-socket-am5/p/N82E16819113814",
+    "models": [
+      "AMD Ryzen 5 8600G OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-113-811-01.jpg",
+    "source": "https://www.newegg.com/amd-ryzen-7-8700g-ryzen-7-8000-g-series-phoenix-zen-4-socket-am5/p/N82E16819113811",
+    "models": [
+      "AMD Ryzen 7 8700G OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/A24GD2203220DB6YE7D.jpg",
+    "source": "https://www.newegg.com/intel-core-i3-12th-gen-core-i3-12100-alder-lake-lga-1700-desktop-cpu-processor/p/N82E16819118370",
+    "models": [
+      "Intel Core i3-12100 OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-357-03.jpg",
+    "source": "https://www.newegg.com/intel-core-i3-12th-gen-core-i3-12100f-alder-lake-lga-1700-desktop-cpu-processor/p/N82E16819118357",
+    "models": [
+      "Intel Core i3-12100F OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-430-10.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-13th-gen-core-i5-13400-raptor-lake-lga-1700-desktop-cpu-processor/p/N82E16819118430",
+    "models": [
+      "Intel Core i5-13400 OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-431-04.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-13th-gen-core-i5-13400f-raptor-lake-lga-1700-desktop-cpu-processor/p/N82E16819118431",
+    "models": [
+      "Intel Core i5-13400F OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-416-V01.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-13th-gen-core-i5-13600k-raptor-lake-lga-1700-desktop-cpu-processor/p/N82E16819118416",
+    "models": [
+      "Intel Core i5-13600K OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-417-V01.jpg",
+    "source": "https://www.newegg.com/intel-core-i5-13th-gen-core-i5-13600kf-raptor-lake-lga-1700-desktop-cpu-processor/p/N82E16819118417",
+    "models": [
+      "Intel Core i5-13600KF OEM"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Intel_Core_i7_13700K.jpg/960px-Intel_Core_i7_13700K.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Intel_Core_i7_13700K.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Intel_Core_i7_13700K.jpg",
+    "models": [
+      "Intel Core i7-13700K OEM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/19-118-466-04.jpg",
+    "source": "https://www.newegg.com/intel-core-i7-14th-gen-core-i7-14700k-raptor-lake-lga-1700-desktop-cpu-processor/p/N82E16819118466",
+    "models": [
+      "Intel Core i7-14700K OEM"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_6_20190104112141_5c2ed145326a0.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-2060-VENTUS-6G/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 2060"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1610429138a73db9c2b0e936d1f2c04787a79e6a84.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-3060-Ti-VENTUS-2X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 3060 Ti"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1_20200929152035_5f72e04322110.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-3070-VENTUS-3X/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 3070"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_162252849577cb743df64cbf2b84c27fb073398b74.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-3070-Ti-VENTUS-3X-8G-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 3070 Ti"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_7_20200917182157_5f6338c5cd72a.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-3080-VENTUS-3X-10G-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 3080 10GB"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/RTX_3090_Founders_Edition.jpg/960px-RTX_3090_Founders_Edition.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/4/48/RTX_3090_Founders_Edition.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:RTX_3090_Founders_Edition.jpg",
+    "models": [
+      "NVIDIA GeForce RTX 3090"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1684388309f60246f6be0d4cac5d4beb1106192066.webp",
+    "source": "https://in.msi.com/Graphics-Card/GeForce-RTX-4060-Ti-VENTUS-2X-BLACK-8G-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4060 Ti 8GB"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1689129550072bc131a003afd3430ce5ea358978fd.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-4060-Ti-VENTUS-2X-BLACK-16G-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4060 Ti 16GB"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1704699649413398d807686f322a7a562d15b205df.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-4070-SUPER-12G-VENTUS-2X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4070 SUPER"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_170470264377d616a9bdabc8ad2871825e65198ef5.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-4070-Ti-SUPER-16G-VENTUS-2X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4070 Ti SUPER"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_170470049111744051fdaa00ae211c3172060a5866.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-4080-SUPER-16G-VENTUS-3X/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4080 SUPER"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_16655531780ae76e91e577ad9719f1f135824e1a15.webp",
+    "source": "https://www.msi.com/Graphics-Card/GeForce-RTX-4090-GAMING-X-TRIO-24G/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 4090"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_17507572669b07fa60658ab594055e169d6d6fa74f.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5050-8G-VENTUS-2X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5050"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_17452877802adc1ee82075afaeea7d2a2dcf366cb9.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5060-8G-VENTUS-2X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5060"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_1767923784d5c0d929e2a96cb8a8507b0218a2b03b.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5060-Ti-8G-VENTUS-2X-OC-BLACK-PLUS/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5060 Ti 8GB"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_175695208101345d0d76d50209c92f7382259250ef.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5060-Ti-16G-VENTUS-2X-OC-BLACK-PLUS/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5060 Ti 16GB"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_173761291547d8b531eb2b3a1f1bf53b14cc6ff999.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5070-12G-VENTUS-3X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5070"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_17375373017f070971309d34e5db4a0cbeed1e55b1.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5070-Ti-16G-VENTUS-3X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_17373636064fcd11cd87f79db1017e31e5a8292a1e.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5080-16G-VENTUS-3X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5080"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/product/product_17373640990ca0a03d5837c522f92eb9d1f487b252.webp",
+    "source": "https://us.msi.com/Graphics-Card/GeForce-RTX-5090-32G-VENTUS-3X-OC/Gallery",
+    "models": [
+      "NVIDIA GeForce RTX 5090"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11310_01_rx6600_pulse_8ggddr6/11310_01_rx6600_pulse_c02_374x256.ashx?v=388daa9df3494c459dd78e9c48432fba",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6600-8g-gddr6",
+    "models": [
+      "AMD Radeon RX 6600"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11319_03_rx6650xt_pulse_8ggddr6/11319_03_rx6650xt_pulse_8gbgddr6_hdmi_3dp_c02_374x265.ashx?v=193190f072fc4954adf16d28a1ec23b7",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6650-xt-8g-gddr6",
+    "models": [
+      "AMD Radeon RX 6650 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11306_02_pulse_rx_6700xt/11306_02_rx6700xt_pulse_12gbgddr6_3dp_hdmi_c02_374x265.ashx?v=e92773f572d34cd98e0e9c906b7449d9",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6700-xt-12g-gddr6",
+    "models": [
+      "AMD Radeon RX 6700 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11318_03_rx6750xt_pulse_12ggddr6/11318_03_rx6750xt_pulse_12gbgddr6_hdmi_3dp_c02_374x265.ashx?v=99dc480455b241bfac7a9a308dc2163c",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6750-xt-12g-gddr6",
+    "models": [
+      "AMD Radeon RX 6750 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11305_02_rx6800_pulse_16ggddr6/11305_02_rx6800_pulse_c02_r_374x265.ashx?v=6d3e7b64801a4307b8af1b79e6963ef7",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6800-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 6800"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11304_03_rx6800xt_pulse_16ggddr6/11304_03_rx6800xt_pulse_c02_r_374x265.ashx?v=6d7a45b934b84e1888dabf3237b2d3e9",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-6800-xt-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 6800 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11308_01_rx6900xt_nitro_16ggddr6/11308_01_rx6900xt_nitro_16gbgddr6_c02_374x265.ashx?v=7c0f76d801174c528993d2aa7655291f",
+    "source": "https://www.sapphiretech.com/en/consumer/nitro-radeon-rx-6900-xt-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 6900 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11339_04_rx7600xt_pulse_16ggddr6/11339_04_rx7600xt_pulse_16gbgddr6_fbc_amd_374x265.ashx?v=1a8a5a3df6b440ed9734595803600325",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7600-xt-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 7600 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11335_04_7700xt_pulse_16gddr6_dual-fan/rx7700xt_pulse_2fan_full_box_card_amd_374x265.ashx?v=4f7f0b0eb8a54d00bc9a00dbf6f6be98",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7700-xt-12g-gddr6",
+    "models": [
+      "AMD Radeon RX 7700 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11325_04_rx7900gre_pulse_16ggddr6/rx7900gre_pulse_full_box_card_amd_374x265.ashx?v=8b8a07d049b44cbb9eec5c7a2a032632",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7900-gre-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 7900 GRE"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11323_02_rx7900xt_pulse_20ggddr6/11323_02_rx7900xt_pulse_20ggddr6_full_box_card_374x265.ashx?v=4c021639f8b74cc0911b2628ccc034a7",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7900-xt-20g-gddr6",
+    "models": [
+      "AMD Radeon RX 7900 XT"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11322_02_rx7900xtx_pulse_24ggddr6/11322_02_rx7900xtx_pulse_24ggddr6_full_box_card_amd_374x265.ashx?v=e944a72b17c24d70ac272ef176ab6f49",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-7900-xtx-24g-gddr6",
+    "models": [
+      "AMD Radeon RX 7900 XTX"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11350_04_rx9060xt_pulse_8ggddr6/rx9060xt_pulse_8gb_photo_374x265.ashx?v=cb4d660a52694fe4903c0ee4b0aabcc0",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-9060-xt-8g-gddr6",
+    "models": [
+      "AMD Radeon RX 9060 XT 8GB"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11350_03_rx9060xt_pulse_16ggddr6/rx9060xt_pulse_16gb_photo_374x265.ashx?v=e1ee498e53544fad8be7f0d595ac163b",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-9060-xt-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 9060 XT 16GB"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11349_03_rx9070_pulse_16ggddr6/rx9070_pulse_photo_374x265.ashx?v=7735c1f14a854fe08e0b751d53fb94bd",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-9070-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 9070"
+    ]
+  },
+  {
+    "src": "https://media.cdn.sapphiretech.com.cn/-/media/sites/sapphire/pim/product-images/11348_03_rx9070xt_pulse_16ggddr6/rx9070xt_pulse_photo_374x265.ashx?v=4456c584cd8647bba6629370df2f2904",
+    "source": "https://www.sapphiretech.com/en/consumer/pulse-radeon-rx-9070-xt-16g-gddr6",
+    "models": [
+      "AMD Radeon RX 9070 XT"
+    ]
+  },
+  {
+    "src": "https://www.asrock.com/Graphics-Card/photo/Intel%20Arc%20A380%20Challenger%20ITX%206GB%20OC%28M1%29.png",
+    "source": "https://www.asrock.com/Graphics-Card/Intel/Intel%20Arc%20A380%20Challenger%20ITX%206GB%20OC/",
+    "models": [
+      "Intel Arc A380"
+    ]
+  },
+  {
+    "src": "https://asrock.com/Graphics-Card/photo/Intel%20Arc%20A580%20Challenger%208GB%20OC%28M1%29.png",
+    "source": "https://asrock.com/Graphics-Card/Intel/Intel%20Arc%20A580%20Challenger%208GB%20OC/",
+    "models": [
+      "Intel Arc A580"
+    ]
+  },
+  {
+    "src": "https://asrock.com/Graphics-Card/photo/Intel%20Arc%20A770%20Challenger%2016GB%20OC%28M1%29.png",
+    "fallback": "https://asrock.com/Graphics-Card/photo/Intel%20Arc%20A770%20Challenger%2016GB%20OC%28S1%29.png",
+    "source": "https://asrock.com/Graphics-Card/Intel/Intel%20Arc%20A770%20Challenger%2016GB%20OC/index.anz.asp",
+    "models": [
+      "Intel Arc A770 16GB"
+    ]
+  },
+  {
+    "src": "https://oc.asrock.com/Graphics-Card/photo/Intel%20Arc%20B570%20Challenger%2010GB%20OC%28M1%29.png",
+    "source": "https://oc.asrock.com/Graphics-Card/Intel/Intel%20Arc%20B570%20Challenger%2010GB%20OC/",
+    "models": [
+      "Intel Arc B570"
+    ]
+  },
+  {
+    "src": "https://www.asrock.com/Graphics-Card/photo/Intel%20Arc%20B580%20Challenger%2012GB%20OC%28M1%29.png",
+    "source": "https://www.asrock.com/Graphics-Card/Intel/Intel%20Arc%20B580%20Challenger%2012GB%20OC/",
+    "models": [
+      "Intel Arc B580"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/features/MB/A-Pro/B550/story_img.png",
+    "source": "https://www.msi.com/Motherboard/B550-A-PRO",
+    "models": [
+      "MSI B550-A PRO"
+    ]
+  },
+  {
+    "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/MSI_B550_Tomahawk_19354.jpg/960px-MSI_B550_Tomahawk_19354.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/9/9b/MSI_B550_Tomahawk_19354.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:MSI_B550_Tomahawk_19354.jpg",
+    "models": [
+      "MSI MAG B550 TOMAHAWK"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B450/B450TomagawkMaxII/hardwarekv.png",
+    "source": "https://www.msi.com/Motherboard/B450-TOMAHAWK-MAX-II",
+    "models": [
+      "MSI B450 TOMAHAWK MAX II"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/A520M/A-520m-Pro/a520m-a-pro-story.png",
+    "source": "https://www.msi.com/Motherboard/A520M-A-PRO",
+    "models": [
+      "MSI A520M-A PRO"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B650/PRO-B650-P-WIFI/kv.png",
+    "source": "https://www.msi.com/Motherboard/PRO-B650-P-WIFI",
+    "models": [
+      "MSI PRO B650-P WIFI"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B650/B650-GAMING-PLUS-WIFI/modelblock-gaming-pd.png",
+    "source": "https://www.msi.com/Motherboard/B650-GAMING-PLUS-WIFI",
+    "models": [
+      "MSI B650 GAMING PLUS WIFI"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B650/MAG-B650-TOMAHAWK-WIFI/mag-b650-tomahawk-wifi.png",
+    "source": "https://www.msi.com/Motherboard/MAG-B650-TOMAHAWK-WIFI",
+    "models": [
+      "MSI MAG B650 TOMAHAWK WIFI"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/A620M/PRO-A620M-E/images/A620M-E-KV.png",
+    "source": "https://www.msi.com/Motherboard/PRO-A620M-E",
+    "models": [
+      "MSI PRO A620M-E"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/PRO-B660M/A-DDR4/story.png",
+    "source": "https://www.msi.com/Motherboard/PRO-B660M-A-DDR4",
+    "models": [
+      "MSI PRO B660M-A DDR4"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/PRO-B760/pro-b760-p-wifi-ddr4/kv-pd.png",
+    "source": "https://www.msi.com/Motherboard/PRO-B760-P-WIFI-DDR4",
+    "models": [
+      "MSI PRO B760-P WIFI DDR4"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/B760/mag-b760-tomahawk-wifi/kv-pd.png",
+    "source": "https://www.msi.com/Motherboard/MAG-B760-TOMAHAWK-WIFI",
+    "models": [
+      "MSI MAG B760 TOMAHAWK WIFI"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/mb/Z790/PRO-Z790-A-WIFI/msi-pro_z790-a_wifi-3d2.png",
+    "source": "https://www.msi.com/Motherboard/PRO-Z790-A-WIFI",
+    "models": [
+      "MSI PRO Z790-A WIFI"
+    ]
+  },
+  {
+    "src": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Memory/CMK16GX4M1E3200C16/Gallery/VENG_LPX_BLK_01.webp",
+    "source": "https://www.corsair.com/us/en/p/memory/cmk16gx4m1e3200c16/vengeancea-lpx-16gb-1-x-16gb-ddr4-dram-3200mhz-c16-memory-kit-black-cmk16gx4m1e3200c16",
+    "models": [
+      "Corsair VENGEANCE LPX 16 ГБ DDR4-3200",
+      "Corsair VENGEANCE LPX 32 ГБ DDR4-3200",
+      "Corsair VENGEANCE LPX 32 ГБ DDR4-3600"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-264-V01.jpg",
+    "source": "https://www.newegg.com/crucial-8gb-ddr4-3200-cas-latency-cl22-desktop-memory/p/N82E16820156264",
+    "models": [
+      "Crucial 8 ГБ DDR4-3200 UDIMM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-268-V01.jpg",
+    "source": "https://www.newegg.com/crucial-16gb-ddr4-3200-cas-latency-cl22-desktop-memory-green/p/N82E16820156268",
+    "models": [
+      "Crucial 16 ГБ DDR4-3200 UDIMM"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-237-S01.jpg",
+    "source": "https://www.newegg.com/crucial-32gb-ddr4-3200-cas-latency-cl22-desktop-memory/p/N82E16820156237",
+    "models": [
+      "Crucial 32 ГБ DDR4-3200 UDIMM"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/2023_Nap%C4%99d_Samsung_970_EVO_Plus_250GB_%281%29.jpg/960px-2023_Nap%C4%99d_Samsung_970_EVO_Plus_250GB_%281%29.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/6/6a/2023_Nap%C4%99d_Samsung_970_EVO_Plus_250GB_%281%29.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:2023_Nap%C4%99d_Samsung_970_EVO_Plus_250GB_%281%29.jpg",
+    "models": [
+      "Samsung 970 EVO Plus 250 ГБ"
+    ]
+  },
+  {
+    "src": "https://images.samsung.com/is/image/samsung/assets/us/storage-devices/magician-software/supported_models/th-970-evo-plus-pc.jpg",
+    "source": "https://www.samsung.com/us/memory-storage/magician-software/",
+    "models": [
+      "Samsung 970 EVO Plus 500 ГБ",
+      "Samsung 970 EVO Plus 1 ТБ",
+      "Samsung 970 EVO Plus 2 ТБ"
+    ]
+  },
+  {
+    "src": "https://images.samsung.com/is/image/samsung/assets/us/storage-devices/magician-software/supported_models/th-980-pc.jpg",
+    "source": "https://www.samsung.com/us/memory-storage/magician-software/",
+    "models": [
+      "Samsung 980 500 ГБ",
+      "Samsung 980 1 ТБ"
+    ]
+  },
+  {
+    "src": "https://images.samsung.com/is/image/samsung/assets/us/storage-devices/magician-software/supported_models/th-980-pro-pc.jpg",
+    "source": "https://www.samsung.com/us/memory-storage/magician-software/",
+    "models": [
+      "Samsung 980 PRO 500 ГБ",
+      "Samsung 980 PRO 2 ТБ"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Samsung_980_PRO_PCIe_4.0_NVMe_SSD_1TB-top_PNr%C2%B00915.jpg/960px-Samsung_980_PRO_PCIe_4.0_NVMe_SSD_1TB-top_PNr%C2%B00915.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/7/75/Samsung_980_PRO_PCIe_4.0_NVMe_SSD_1TB-top_PNr%C2%B00915.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Samsung_980_PRO_PCIe_4.0_NVMe_SSD_1TB-top_PNr%C2%B00915.jpg",
+    "models": [
+      "Samsung 980 PRO 1 ТБ"
+    ]
+  },
+  {
+    "src": "https://images.samsung.com/is/image/samsung/assets/us/storage-devices/magician-software/supported_models/th-990-pro-pc.jpg",
+    "source": "https://www.samsung.com/us/memory-storage/magician-software/",
+    "models": [
+      "Samsung 990 PRO 1 ТБ",
+      "Samsung 990 PRO 2 ТБ",
+      "Samsung 990 PRO 4 ТБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-172-V01.jpg",
+    "source": "https://www.newegg.com/crucial-mx500-250gb/p/N82E16820156172",
+    "models": [
+      "Crucial MX500 250 ГБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-173-V01.jpg",
+    "source": "https://www.newegg.com/crucial-500gb-mx500-sata/p/N82E16820156173",
+    "models": [
+      "Crucial MX500 500 ГБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-174-V09.jpg",
+    "source": "https://www.newegg.com/crucial-1tb-mx500-sata/p/N82E16820156174",
+    "models": [
+      "Crucial MX500 1 ТБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-175-V01.jpg",
+    "source": "https://www.newegg.com/crucial-mx500-2tb/p/N82E16820156175",
+    "models": [
+      "Crucial MX500 2 ТБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-282-V01.jpg",
+    "source": "https://www.newegg.com/crucial-4tb-mx500/p/20-156-282",
+    "models": [
+      "Crucial MX500 4 ТБ"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/20-156-299-01.jpg",
+    "source": "https://www.newegg.com/crucial-500gb-p3-plus-nvme/p/N82E16820156299",
+    "models": [
+      "Crucial P3 Plus 500 ГБ",
+      "Crucial P3 Plus 1 ТБ",
+      "Crucial P3 Plus 2 ТБ",
+      "Crucial P3 Plus 4 ТБ"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MAG/mag-a750bn-pcie5/images/MAG-A750BNN_KV-p1.png",
+    "source": "https://in.msi.com/Power-Supply/MAG-A750BN-PCIE5",
+    "models": [
+      "MSI MAG A750BN PCIE5"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MAG/A650GL/kv-power.png",
+    "source": "https://us.msi.com/Power-Supply/MAG-A650GL",
+    "models": [
+      "MSI MAG A650GL"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MAG/A750GL-PCIE5/kv-power.png",
+    "source": "https://www.msi.com/Power-Supply/MAG-A750GL-PCIE5",
+    "models": [
+      "MSI MAG A750GL PCIE5"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MAG/A850GL-PCIE5/msi-mag-850gl-power-kv.png",
+    "source": "https://www.msi.com/Power-Supply/MAG-A850GL-PCIE5",
+    "models": [
+      "MSI MAG A850GL PCIE5"
+    ]
+  },
+  {
+    "src": "https://storage-asset.msi.com/global/picture/image/feature/power/MPG/A1000G-pcie5/kv-power.png",
+    "source": "https://www.msi.com/Power-Supply/MPG-A1000G-PCIE5",
+    "models": [
+      "MSI MPG A1000G PCIE5"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PN850M/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PN850M/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/PowerSupplyUnits/powersupplyunits/PN850M-ATX3.1-Modular-Power-Supply/2023/17874.shtml",
+    "models": [
+      "DeepCool PN850M"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PN1000M/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/PowerSupplyUnits/PN1000M/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/PowerSupplyUnits/powersupplyunits/PN1000M-ATX3.1-Modular-Power-Supply/2024/18962.shtml",
+    "models": [
+      "DeepCool PN1000M"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CC360_ARGB/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CC360_ARGB/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/CC360-ARGB-M-ATX-Airflow-Case/2023/16791.shtml",
+    "models": [
+      "DeepCool CC360 ARGB"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CH560/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CH560/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/CH560-New-Generation-of-Airflow-Case/2023/17101.shtml",
+    "models": [
+      "DeepCool CH560"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cases/CH510/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cases/fulltowercases/CH510-Mid-Tower-ATX-Case/2022/15764.shtml",
+    "models": [
+      "DeepCool CH510"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Corsair_4000D_Airflow_mid-tower_ATX_case.tif/lossy-page1-500px-Corsair_4000D_Airflow_mid-tower_ATX_case.tif.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Corsair_4000D_Airflow_mid-tower_ATX_case.tif/lossy-page1-500px-Corsair_4000D_Airflow_mid-tower_ATX_case.tif.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Corsair_4000D_Airflow_mid-tower_ATX_case.tif",
+    "models": [
+      "Corsair 4000D AIRFLOW"
+    ]
+  },
+  {
+    "src": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Cases/base-5000d-airflow/Gallery/5000D_AF_BLACK_001.webp",
+    "source": "https://www.corsair.com/us/en/p/null/cc-9011210-ww/5000d-airflow-tempered-glass-mid-tower-atx-pc-case-black-cc-9011210-ww",
+    "models": [
+      "Corsair 5000D AIRFLOW"
+    ]
+  },
+  {
+    "src": "https://assets.fractal-design.com/images/uxzbxy2o/production/3d28e1bb2a25090ea4696a6e70c077b28d369365-4961x2790.jpg?auto=format&fit=crop&h=1536&q=75&rect=156%2C0%2C4650%2C2790&w=2560",
+    "source": "https://www.fractal-design.com/fr/products/cases/pop-series/pop-air/pop-air-black-solid/",
+    "models": [
+      "Fractal Design Pop Air"
+    ]
+  },
+  {
+    "src": "https://assets.fractal-design.com/images/uxzbxy2o/production/4ac5ff094622c2aac4d34154ef0b41b7ede5ec23-2560x3200.png?auto=format&fit=crop&h=2560&q=75&rect=0%2C320%2C2560%2C2560&w=2560",
+    "source": "https://www.fractal-design.com/products/cases/focus-series/focus-2/focus-2-black-solid/",
+    "models": [
+      "Fractal Design Focus 2"
+    ]
+  },
+  {
+    "src": "https://assets.fractal-design.com/images/uxzbxy2o/production/7cab789b86023dad70a70174253a2023beb0ab3f-2560x3200.png?auto=format&fit=crop&h=2560&q=75&rect=0%2C320%2C2560%2C2560&w=2560",
+    "source": "https://www.fractal-design.com/products/cases/meshify-series/meshify-2-compact/meshify-2-compact-black/",
+    "models": [
+      "Fractal Design Meshify 2 Compact"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AK500/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cooling/cpuaircoolers/AK500-High-Performance-CPU-Cooler-1700-AM5/2022/16040.shtml",
+    "models": [
+      "DeepCool AK500"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AK620/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AK620/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://www.deepcool.com/products/Cooling/cpuaircoolers/AK620-High-Performance-CPU-Cooler-1851-1700-AM5/2024/13067.shtml",
+    "models": [
+      "DeepCool AK620"
+    ]
+  },
+  {
+    "src": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AG620/Gallery/800X800/01.jpg?auto=format%2Ccompress&q=90",
+    "fallback": "https://cdn.deepcool.com/public/ProductFile/DEEPCOOL/Cooling/CPUAirCoolers/AG620/Gallery/110X110/01.jpg?auto=format%2Ccompress&q=90",
+    "source": "https://global.deepcool.com/products/Cooling/cpuaircoolers/2022/15900.shtml",
+    "models": [
+      "DeepCool AG620"
+    ]
+  },
+  {
+    "src": "https://cdn.noctua.at/media/nh_u12s_redux_1.jpg",
+    "source": "https://www.noctua.at/en/products/nh-u12s-redux",
+    "models": [
+      "Noctua NH-U12S redux"
+    ]
+  },
+  {
+    "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/NH-D15_with_classic_fans.jpg/960px-NH-D15_with_classic_fans.jpg",
+    "fallback": "https://upload.wikimedia.org/wikipedia/commons/3/38/NH-D15_with_classic_fans.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:NH-D15_with_classic_fans.jpg",
+    "models": [
+      "Noctua NH-D15"
+    ]
+  },
+  {
+    "src": "https://c1.neweggimages.com/productimage/nb640/BT4YD26061214HW37FB.jpg",
+    "source": "https://www.newegg.com/p/3C6-005Y-02U81",
+    "models": [
+      "ARCTIC Freezer 36"
+    ]
+  }
+]

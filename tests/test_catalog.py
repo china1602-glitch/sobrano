@@ -131,7 +131,13 @@ class CatalogTests(unittest.TestCase):
         selected = filter_builds([first, second], self.products, prices, task="Игры", max_price=300000)
         self.assertEqual(selected, [first])
         self.assertEqual(filter_builds([first, second], self.products, prices, max_price=10), [])
-        self.assertEqual(len(filter_builds([first, second], self.products, prices, max_price=0)), 2)
+        self.assertEqual(filter_builds([first, second], self.products, prices, max_price=0), [])
+        self.assertEqual(filter_builds([first, second], self.products, prices, max_price="0"), [])
+        self.assertEqual(len(filter_builds([first, second], self.products, prices)), 2)
+        self.assertEqual(len(filter_builds([first, second], self.products, prices, max_price="")), 2)
+        for value in (-1, 0.5, "NaN", "oops", float("inf"), True):
+            with self.subTest(budget=value), self.assertRaises(ValueError):
+                filter_builds([first, second], self.products, prices, max_price=value)
         self.assertEqual(build_parts(first, self.products)["cpu"], 0)
         broken = ["Wrong", "", "", [True, 0, None, "2"]]
         self.assertEqual(build_parts(broken, self.products), {})

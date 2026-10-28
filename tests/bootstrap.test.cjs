@@ -149,13 +149,31 @@ test("неудачная инициализация приложения ост�
   assert(result.elements.some((element) => element.textContent === "Не удалось загрузить сайт"));
 });
 
-test("все девять страниц запускаются через единственный bootstrap", () => {
+test("все десять страниц запускаются через единственный bootstrap", () => {
   const root = path.resolve(__dirname, "..");
   const pages = fs.readdirSync(root).filter((name) => name.endsWith(".html"));
-  assert.equal(pages.length, 9);
+  assert.deepEqual(pages.sort(), ["about.html", "account.html", "build.html", "builder.html", "builds.html", "catalog.html", "compare.html", "favorites.html", "index.html", "product.html"]);
   for (const page of pages) {
     const html = fs.readFileSync(path.join(root, page), "utf8");
     const scripts = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);
     assert.deepEqual(scripts, ["js/bootstrap.js"], page);
   }
+});
+
+test("онлайн-режим использует серверный каталог и сохраняет своё имя режима", async () => {
+  const apiData = { ...catalog, offers, prices: { p0: { value: 55000 } }, buildResults: {} };
+  const result = await boot({ runtime: { backend: "server", apiBase: "api/", features: { savedBuilds: true } }, apiData });
+  assert.equal(result.success, true);
+  assert.equal(result.window.SOBRANO_RUNTIME.backend, "server");
+  assert.equal(result.window.SOBRANO_RUNTIME.features.savedBuilds, true);
+  assert.equal(result.window.SOBRANO_SERVER_DATA, apiData);
+  assert.deepEqual(result.requests, ["/sobrano/runtime.json", "/sobrano/api/catalog"]);
+});
+
+test("отказ онлайн API не маскируется статическим режимом или просьбой открыть VS Code", async () => {
+  const result = await boot({ runtime: { backend: "server", apiBase: "api/" }, apiStatus: 503 });
+  assert.equal(result.success, false);
+  assert.match(result.window.SOBRANO_BOOT_ERROR, /серверного API: HTTP 503/);
+  assert(!result.elements.some(element => /Python|VS Code/.test(element.textContent || "")));
+  assert.deepEqual(result.requests, ["/sobrano/runtime.json", "/sobrano/api/catalog"]);
 });

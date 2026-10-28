@@ -62,12 +62,33 @@ class ServerTests(unittest.TestCase):
             self.assertIn(b"SobranoCompatibility", response.read())
 
     def test_development_files_are_not_served(self):
-        for path in ("/.git/config", "/.vscode/launch.json", "/%2egit/config", "/.env"):
+        for path in ("/.git/config", "/.vscode/launch.json", "/%2egit/config", "/.env",
+                     "/server.py", "/online/api.mjs", "/instance/sobrano.sqlite",
+                     "/instance/", "/backend/", "/docs/", "/package.json"):
             for method in ("GET", "HEAD"):
                 with self.subTest(path=path, method=method):
                     with self.assertRaises(HTTPError) as caught:
                         urlopen(Request(self.base + path, method=method), timeout=3)
                     self.assertEqual(caught.exception.code, 404)
+
+    def test_existing_private_database_is_not_exposed_by_legacy_server(self):
+        with TemporaryDirectory() as directory:
+            private = Path(directory) / "instance"
+            private.mkdir()
+            (private / "sobrano.sqlite").write_bytes(b"private account database")
+            server = create_server(0, root=directory)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for path in ("/instance/sobrano.sqlite", "/instance/", "/"):
+                    with self.subTest(path=path):
+                        with self.assertRaises(HTTPError) as caught:
+                            urlopen(f"http://127.0.0.1:{server.server_port}" + path, timeout=3)
+                        self.assertEqual(caught.exception.code, 404)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
 
     def test_missing_resource_is_404(self):
         with self.assertRaises(HTTPError) as caught:
@@ -191,6 +212,8 @@ class ServerTests(unittest.TestCase):
         query = urlencode({"task": task, "budget": maximum})
         self.assertEqual(self.get_json("/api/builds?" + query)["ids"], expected)
         self.assertEqual(len(self.get_json("/api/builds")["ids"]), len(self.raw["builds"]))
+        self.assertEqual(len(self.get_json("/api/builds?budget=")["ids"]), len(self.raw["builds"]))
+        self.assertEqual(self.get_json("/api/builds?budget=0")["ids"], [])
 
     def test_malformed_parts_queries_are_rejected_instead_of_reset(self):
         for value in ("", "0", "-1,,,,,,,", "1.0,,,,,,,", "true,,,,,,,", "999999,,,,,,,", ",0,,,,,,", "00,,,,,,,", "null,,,,,,,"):
@@ -201,7 +224,9 @@ class ServerTests(unittest.TestCase):
         for query in ("min=NaN", "max=Infinity", "min=-1", "min=10&max=1", "cat=bad", "sort=bad", "compat=bad", "ids=p999999", "ids=0", "ids=p01", "cat=cpu&cat=gpu"):
             with self.subTest(query=query):
                 self.assert_json_error("/api/products?" + query)
-        self.assert_json_error("/api/builds?budget=NaN")
+        for value in ("NaN", "-1", "0.5", "Infinity", "oops", "9007199254740992"):
+            with self.subTest(budget=value):
+                self.assert_json_error("/api/builds?" + urlencode({"budget": value}))
 
     def test_invalid_configuration_objects_return_400(self):
         wrong_board = self.product_index("MSI PRO B650M-P")
